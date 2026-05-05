@@ -14,7 +14,8 @@
 class EpubReaderMenuActivity final : public ActivityWithSubactivity {
  public:
   // Menu actions available from the reader menu.
-  enum class MenuAction { SELECT_CHAPTER, GO_TO_PERCENT, ROTATE_SCREEN, GO_HOME, SYNC, SYNCY,DELETE_CACHE };
+  enum class MenuAction { SELECT_CHAPTER, GO_TO_PERCENT, ROTATE_SCREEN, GO_HOME, SYNC, SYNCY, DELETE_CACHE,
+                          BOOKMARK_LIST, ADD_BOOKMARK };  // stage12: 書籤系統
 
   explicit EpubReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const std::string& title,
                                   const int currentPage, const int totalPages, const int bookProgressPercent,
@@ -41,8 +42,10 @@ class EpubReaderMenuActivity final : public ActivityWithSubactivity {
 
   // Fixed menu layout (order matters for up/down navigation).
   // stage10: SYNC (KOReader) 與 SYNCY (堅果雲) 砍掉
+  // stage12: 加入書籤系統選項
   const std::vector<MenuItem> menuItems = {
-      {MenuAction::SELECT_CHAPTER, "進入章節目錄"}, {MenuAction::ROTATE_SCREEN, "閱讀方向"},
+      {MenuAction::SELECT_CHAPTER, "進入章節目錄"}, {MenuAction::BOOKMARK_LIST, "書籤列表"},
+      {MenuAction::ADD_BOOKMARK, "添加書籤"},        {MenuAction::ROTATE_SCREEN, "閱讀方向"},
       {MenuAction::GO_TO_PERCENT, "直達進度 %"},    {MenuAction::GO_HOME, "返回主頁"},
       {MenuAction::DELETE_CACHE, "清理快取"}};
 

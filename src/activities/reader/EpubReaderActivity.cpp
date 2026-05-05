@@ -11,6 +11,10 @@
 #include "EpubReaderChapterSelectionActivity.h"
 #include "EpubReaderPercentSelectionActivity.h"
 // stage10: KOReaderSync 砍掉，台灣使用者用不到
+// stage12: 書籤系統
+#include "BookmarkActivity.h"
+#include "BookmarkStore.h"
+#include "EpubBookmarkSelectionActivity.h"
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
 #include "components/UITheme.h"
@@ -660,6 +664,64 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       break;
     }
     // stage10: SYNC (KOReader) 與 SYNCY (JianGuo) 砍掉，台灣使用者用不到
+    // stage12: 書籤系統
+    case EpubReaderMenuActivity::MenuAction::BOOKMARK_LIST: {
+      xSemaphoreTake(renderingMutex, portMAX_DELAY);
+      exitActivity();
+      enterNewActivity(new EpubBookmarkSelectionActivity(
+          renderer, mappedInput, epub,
+          [this]() {
+            exitActivity();
+            updateRequired = true;
+          },
+          [this](const BookmarkStore::BookmarkRecord& record) {
+            const int spineCount = epub ? epub->getSpineItemsCount() : 0;
+            const int bookmarkSpine = static_cast<int>(record.pos1);
+            const int bookmarkPage = static_cast<int>(record.pos2);
+            const int bookmarkPageCount = static_cast<int>(record.pos3);
+
+            if (spineCount > 0 && bookmarkSpine >= 0 && bookmarkSpine < spineCount && bookmarkPage >= 0) {
+              xSemaphoreTake(renderingMutex, portMAX_DELAY);
+              currentSpineIndex = bookmarkSpine;
+              nextPageNumber = bookmarkPage;
+              cachedSpineIndex = bookmarkSpine;
+              cachedChapterTotalPageCount = bookmarkPageCount > 0 ? bookmarkPageCount : 0;
+              section.reset();
+              xSemaphoreGive(renderingMutex);
+            } else {
+              jumpToPercent(static_cast<int>(record.progressPercent));
+            }
+            exitActivity();
+            updateRequired = true;
+          }));
+      xSemaphoreGive(renderingMutex);
+      break;
+    }
+    case EpubReaderMenuActivity::MenuAction::ADD_BOOKMARK: {
+      float bookProgress = 0.0f;
+      int currentPage = 0;
+      int totalPages = 0;
+      if (section) {
+        currentPage = section->currentPage;
+        totalPages = section->pageCount;
+      }
+      if (epub && epub->getBookSize() > 0 && totalPages > 0) {
+        const float chapterProgress = static_cast<float>(currentPage) / static_cast<float>(totalPages);
+        bookProgress = epub->calculateProgress(currentSpineIndex, chapterProgress) * 100.0f;
+      }
+      const int percent = clampPercent(static_cast<int>(bookProgress + 0.5f));
+
+      xSemaphoreTake(renderingMutex, portMAX_DELAY);
+      exitActivity();
+      enterNewActivity(new BookmarkActivity(
+          renderer, mappedInput, epub->getPath(), epub->getCachePath(), percent, currentSpineIndex, currentPage,
+          totalPages, [this](bool) {
+            exitActivity();
+            updateRequired = true;
+          }));
+      xSemaphoreGive(renderingMutex);
+      break;
+    }
   }
 }
 
