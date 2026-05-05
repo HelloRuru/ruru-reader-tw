@@ -344,6 +344,7 @@ float CrossPointSettings::getReaderLineCompression() const {
         case WIDE:
           return 1.0f;
       }
+    // stage12.5: OPENDYSLEXIC 砍掉，fallback 用 NOTOSANS metrics
     case OPENDYSLEXIC:
       switch (lineSpacing) {
         case TIGHT:
@@ -441,17 +442,19 @@ int CrossPointSettings::getReaderFontId() const {
         case EXTRA_LARGE:
           return NOTOSANS_18_FONT_ID;
       }
+    // stage12.5: OPENDYSLEXIC 砍掉，fallback 到 NOTOSANS（用 NOTOSANS case 的程式碼）
     case OPENDYSLEXIC:
       switch (fontSize) {
         case SMALL:
-          return OPENDYSLEXIC_8_FONT_ID;
+          return NOTOSANS_12_FONT_ID;
         case MEDIUM:
         default:
-          return OPENDYSLEXIC_10_FONT_ID;
+          return NOTOSANS_14_FONT_ID;
         case LARGE:
-          return OPENDYSLEXIC_12_FONT_ID;
+          return NOTOSANS_16_FONT_ID;
         case EXTRA_LARGE:
-          return OPENDYSLEXIC_14_FONT_ID;
+          return NOTOSANS_18_FONT_ID;
       }
   }
+  return NOTOSANS_14_FONT_ID;
 }

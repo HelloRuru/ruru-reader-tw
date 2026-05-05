@@ -93,30 +93,7 @@ EpdFont notosans18BoldItalicFont(&notosans_18_bold);
 EpdFontFamily notosans18FontFamily(&notosans18RegularFont, &notosans18BoldFont, &notosans18ItalicFont,
                                    &notosans18BoldItalicFont);
 
-EpdFont opendyslexic8RegularFont(&notosans_18_bold);
-EpdFont opendyslexic8BoldFont(&notosans_18_bold);
-EpdFont opendyslexic8ItalicFont(&notosans_18_bold);
-EpdFont opendyslexic8BoldItalicFont(&notosans_18_bold);
-EpdFontFamily opendyslexic8FontFamily(&opendyslexic8RegularFont, &opendyslexic8BoldFont, &opendyslexic8ItalicFont,
-                                      &opendyslexic8BoldItalicFont);
-EpdFont opendyslexic10RegularFont(&notosans_18_bold);
-EpdFont opendyslexic10BoldFont(&notosans_18_bold);
-EpdFont opendyslexic10ItalicFont(&notosans_18_bold);
-EpdFont opendyslexic10BoldItalicFont(&notosans_18_bold);
-EpdFontFamily opendyslexic10FontFamily(&opendyslexic10RegularFont, &opendyslexic10BoldFont, &opendyslexic10ItalicFont,
-                                       &opendyslexic10BoldItalicFont);
-EpdFont opendyslexic12RegularFont(&notosans_18_bold);
-EpdFont opendyslexic12BoldFont(&notosans_18_bold);
-EpdFont opendyslexic12ItalicFont(&notosans_18_bold);
-EpdFont opendyslexic12BoldItalicFont(&notosans_18_bold);
-EpdFontFamily opendyslexic12FontFamily(&opendyslexic12RegularFont, &opendyslexic12BoldFont, &opendyslexic12ItalicFont,
-                                       &opendyslexic12BoldItalicFont);
-EpdFont opendyslexic14RegularFont(&notosans_18_bold);
-EpdFont opendyslexic14BoldFont(&notosans_18_bold);
-EpdFont opendyslexic14ItalicFont(&notosans_18_bold);
-EpdFont opendyslexic14BoldItalicFont(&notosans_18_bold);
-EpdFontFamily opendyslexic14FontFamily(&opendyslexic14RegularFont, &opendyslexic14BoldFont, &opendyslexic14ItalicFont,
-                                       &opendyslexic14BoldItalicFont);
+// stage12.5: OpenDyslexic 字型砍掉（給閱讀障礙者用的英文字型，台灣不用）
 #endif  // OMIT_FONTS
 
 // UI 字型替換為 jf-openhuninn（粉圓體，4877 字繁中字集）
@@ -308,10 +285,7 @@ void setupDisplayAndFonts() {
   renderer.insertFont(NOTOSANS_14_FONT_ID, notosans14FontFamily);
   renderer.insertFont(NOTOSANS_16_FONT_ID, notosans16FontFamily);
   renderer.insertFont(NOTOSANS_18_FONT_ID, notosans18FontFamily);
-  renderer.insertFont(OPENDYSLEXIC_8_FONT_ID, opendyslexic8FontFamily);
-  renderer.insertFont(OPENDYSLEXIC_10_FONT_ID, opendyslexic10FontFamily);
-  renderer.insertFont(OPENDYSLEXIC_12_FONT_ID, opendyslexic12FontFamily);
-  renderer.insertFont(OPENDYSLEXIC_14_FONT_ID, opendyslexic14FontFamily);
+  // stage12.5: OpenDyslexic 字型砍掉（不再 insertFont）
 #endif  // OMIT_FONTS
   renderer.insertFont(UI_10_FONT_ID, ui10FontFamily);
   renderer.insertFont(UI_12_FONT_ID, ui12FontFamily);
