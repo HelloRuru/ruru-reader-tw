@@ -120,7 +120,8 @@ class CrossPointSettings {
   enum HIDE_BATTERY_PERCENTAGE { HIDE_NEVER = 0, HIDE_READER = 1, HIDE_ALWAYS = 2, HIDE_BATTERY_PERCENTAGE_COUNT };
 
   // UI Theme
-  enum UI_THEME { CLASSIC = 0, LYRA = 1, LYRA_FLOW = 2, LYRA_3COVERS = 3, ROUNDEDRAFF = 4 };
+  // stage5.5: 圓角 theme 暫時砍掉（選單空白 bug 還沒修），但保留 enum 值給之後修好加回來
+  enum UI_THEME { CLASSIC = 0, LYRA = 1, LYRA_FLOW = 2, LYRA_3COVERS = 3 };
 
   // Sleep screen settings
   uint8_t sleepScreen = LIGHT;

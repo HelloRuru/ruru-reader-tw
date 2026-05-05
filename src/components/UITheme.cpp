@@ -9,7 +9,8 @@
 #include "components/themes/lyra/LyraTheme.h"
 #include "components/themes/lyra/LyraFlowTheme.h"
 #include "components/themes/lyra/Lyra3CoversTheme.h"
-#include "components/themes/roundedraff/RoundedRaffTheme.h"
+// stage5.5: 圓角 theme 暫時砍掉（選單空白 bug 還沒修）
+// #include "components/themes/roundedraff/RoundedRaffTheme.h"
 
 UITheme UITheme::instance;
 
@@ -45,11 +46,9 @@ void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
       currentTheme = new Lyra3CoversTheme();
       currentMetrics = &Lyra3CoversMetrics::values;
       break;
-    case CrossPointSettings::UI_THEME::ROUNDEDRAFF:
-      Serial.printf("[%lu] [UI] Using RoundedRaff theme\n", millis());
-      currentTheme = new RoundedRaffTheme();
-      currentMetrics = &RoundedRaffMetrics::values;
-      break;
+    // stage5.5: 圓角 theme 暫時砍掉（選單空白 bug 還沒修）
+    // case CrossPointSettings::UI_THEME::ROUNDEDRAFF:
+    //   ...
   }
 }
 
