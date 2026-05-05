@@ -7,6 +7,7 @@
 #include "RecentBooksStore.h"
 #include "components/themes/BaseTheme.h"
 #include "components/themes/lyra/LyraTheme.h"
+#include "components/themes/lyra/LyraFlowTheme.h"
 
 UITheme UITheme::instance;
 
@@ -31,6 +32,11 @@ void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
       Serial.printf("[%lu] [UI] Using Lyra theme\n", millis());
       currentTheme = new LyraTheme();
       currentMetrics = &LyraMetrics::values;
+      break;
+    case CrossPointSettings::UI_THEME::LYRA_FLOW:
+      Serial.printf("[%lu] [UI] Using Lyra Flow theme (carousel)\n", millis());
+      currentTheme = new LyraFlowTheme();
+      currentMetrics = &LyraFlowMetrics::values;
       break;
   }
 }
