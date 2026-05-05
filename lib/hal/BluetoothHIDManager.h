@@ -17,6 +17,7 @@ struct BluetoothDevice {
   std::string name;
   int rssi;
   bool isHID = false;
+  uint8_t addressType = 0;  // 0=PUBLIC, 1=RANDOM (從掃描取得，避免 connect 寫死類型)
 };
 
 struct ConnectedDevice {

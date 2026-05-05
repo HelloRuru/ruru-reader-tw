@@ -57,6 +57,11 @@ BluetoothHIDManager& BluetoothHIDManager::getInstance() {
 
 BluetoothHIDManager::BluetoothHIDManager() {
   Serial.printf("BT BluetoothHIDManager constructor");
+  // 方案 B：預留空間避免 push_back 觸發 realloc 移動 ConnectedDevice，
+  // ConnectedDevice 含裸指標（NimBLEClient*、reportChars vector），
+  // realloc 時 NimBLE 異步 callback 可能 access 到舊位置
+  _connectedDevices.reserve(4);
+  _discoveredDevices.reserve(16);
 }
 
 BluetoothHIDManager::~BluetoothHIDManager() {
@@ -241,7 +246,9 @@ void BluetoothHIDManager::onScanResult(NimBLEAdvertisedDevice* advertisedDevice)
   device.name = name.empty() ? "Unknown" : name;
   device.rssi = rssi;
   device.isHID = isHID;
-  
+  // 方案 A：從掃描取得實際地址類型（避免 connect 時寫死 RANDOM 連不上 public 裝置）
+  device.addressType = advertisedDevice->getAddressType();
+
   _discoveredDevices.push_back(device);
 
     const std::string prefix = (address.size() >= 8) ? address.substr(0, 8) : address;
@@ -272,8 +279,9 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
     return true;
   }
   
-  // 保留你要求的拦截逻辑：必须在扫描列表中
+  // 必须在扫描列表中，順便取得地址類型（方案 A）
   bool seen = false;
+  uint8_t scannedAddrType = 0;
   for (const auto& dev : _discoveredDevices) {
     if (dev.address == address) {
       seen = true;
@@ -282,10 +290,10 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
         lastError = "Not HID device";
         return false;
       }
+      scannedAddrType = dev.addressType;
       break;
     }
   }
-  // 保留拦截：不在扫描结果里 → 直接返回失败
   if (!seen) {
     Serial.printf("BT Device %s not in scan results (skipping requirement)", address.c_str());
     return false;
@@ -301,23 +309,23 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
       Serial.printf("BT Failed to create BLE client");
       return false;
     }
-    pClient->setSelfDelete(false, false);
+    // 方案 C：讓 NimBLE 自己管理 client 生命週期
+    // 原 setSelfDelete(false, false) + 手動 deleteClient 會造成 double-free，
+    // 因為 NimBLE 在 onDisconnect 仍會 cleanup pClient，再呼叫 deleteClient 就崩。
+    // 改成 setSelfDelete(true, true)，並移除所有手動 deleteClient 呼叫。
+    pClient->setSelfDelete(true, true);
     
     static ClientCallbacks clientCallbacks;
     pClient->setClientCallbacks(&clientCallbacks);
 
-    // ====================== 唯一修复：随机地址类型 ======================
-    NimBLEAddress bleAddress(address, BLE_ADDR_RANDOM);
-    // ====================================================================
+    // 方案 A：用掃描時記下的真實地址類型（原寫死 BLE_ADDR_RANDOM 對 public 地址裝置會走進失敗路徑、觸發 cleanup race）
+    NimBLEAddress bleAddress(address, scannedAddrType);
+    Serial.printf("BT Using addrType=%d for %s", scannedAddrType, address.c_str());
     
     if (!pClient->connect(bleAddress)) {
       lastError = "Connection failed";
       Serial.printf("BT Failed to connect to %s", address.c_str());
-      try {
-        NimBLEDevice::deleteClient(pClient);
-      } catch (...) {
-        Serial.printf("BT Warning: failed to delete client after connection failure");
-      }
+      // 方案 C：setSelfDelete(true, true) 後，NimBLE 自動 cleanup，不再手動 delete
       return false;
     }
     
@@ -328,14 +336,10 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
       lastError = "HID service not found";
       Serial.printf("BT Device %s doesn't have HID service", address.c_str());
       pClient->disconnect();
-      try {
-        NimBLEDevice::deleteClient(pClient);
-      } catch (...) {
-        Serial.printf("BT Warning: failed to delete client after HID service failure");
-      }
+      // 方案 C：disconnect 後 NimBLE 自動 cleanup
       return false;
     }
-    
+
     Serial.printf("BT Found HID service, enumerating report characteristics...");
     
     auto pCharacteristics = pService->getCharacteristics(true);
@@ -367,11 +371,7 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
       lastError = "No input report characteristic found";
       Serial.printf("BT No Report characteristic with notify/indicate found");
       pClient->disconnect();
-      try {
-        NimBLEDevice::deleteClient(pClient);
-      } catch (...) {
-        Serial.printf("BT Warning: failed to delete client after report char failure");
-      }
+      // 方案 C：disconnect 後 NimBLE 自動 cleanup
       return false;
     }
     
@@ -432,10 +432,9 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
     Serial.printf("BT %s", lastError.c_str());
     if (pClient) {
       try {
-        pClient->disconnect();
-        NimBLEDevice::deleteClient(pClient);
+        pClient->disconnect();  // 方案 C：disconnect 後 NimBLE 自動 cleanup
       } catch (...) {
-        Serial.printf("BT Warning: failed to cleanup client after exception");
+        Serial.printf("BT Warning: failed to disconnect after exception");
       }
     }
     return false;
@@ -444,10 +443,9 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
     Serial.printf("BT %s", lastError.c_str());
     if (pClient) {
       try {
-        pClient->disconnect();
-        NimBLEDevice::deleteClient(pClient);
+        pClient->disconnect();  // 方案 C：disconnect 後 NimBLE 自動 cleanup
       } catch (...) {
-        Serial.printf("BT Warning: failed to cleanup client after unknown exception");
+        Serial.printf("BT Warning: failed to disconnect after unknown exception");
       }
     }
     return false;
