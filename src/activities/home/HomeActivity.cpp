@@ -274,18 +274,18 @@ void HomeActivity::render() {
                           std::bind(&HomeActivity::storeCoverBuffer, this));
 
   // Build menu items dynamically
-std::vector<const char*> menuItems = {"挑选一本书", "最近阅读"};
+std::vector<const char*> menuItems = {"挑選一本書", "最近閱讀"};
 
 if (hasOpdsUrl) {
-    menuItems.push_back("OPDS 浏览器");
+    menuItems.push_back("OPDS 瀏覽器");
 }
 if (hasjianguoUrl) {
-    menuItems.push_back("坚果云");
+    menuItems.push_back("堅果雲");
 }
 
 
 menuItems.push_back("wifi功能");
-menuItems.push_back("设置");
+menuItems.push_back("設定");
 
   GUI.drawButtonMenu(
       renderer,
@@ -295,7 +295,7 @@ menuItems.push_back("设置");
       static_cast<int>(menuItems.size()), selectorIndex - recentBooks.size(),
       [&menuItems](int index) { return std::string(menuItems[index]); }, nullptr);
 
-  const auto labels = mappedInput.mapLabels("", "选择", "向上", "向下");
+  const auto labels = mappedInput.mapLabels("", "選擇", "向上", "向下");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

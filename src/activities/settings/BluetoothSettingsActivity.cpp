@@ -299,7 +299,7 @@ void BluetoothSettingsActivity::renderMainMenu() {
   renderer.clearScreen();
 
   // Header
-  renderer.drawCenteredText(UI_12_FONT_ID, 15, "蓝牙设置", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_12_FONT_ID, 15, "藍芽設定", true, EpdFontFamily::BOLD);
 
   // Status line
   std::string statusLine;
@@ -307,13 +307,13 @@ void BluetoothSettingsActivity::renderMainMenu() {
     if (btMgr->isEnabled()) {
       auto connDevices = btMgr->getConnectedDevices();
       char buf[64];
-      snprintf(buf, sizeof(buf), "已启用 (%zu 个已连接设备)", connDevices.size());
+      snprintf(buf, sizeof(buf), "已啟用 (%zu 個已連線裝置)", connDevices.size());
       statusLine = buf;
     } else {
       statusLine = "已禁用";
     }
   } else {
-    statusLine = "蓝牙错误";
+    statusLine = "藍芽錯誤";
   }
   renderer.drawText(SMALL_FONT_ID, 20, 45, statusLine.c_str());
 
@@ -326,8 +326,8 @@ void BluetoothSettingsActivity::renderMainMenu() {
   constexpr int startY = 110;
   constexpr int lineHeight = 40;
   const char* items[] = {
-      btMgr && btMgr->isEnabled() ? "禁用蓝牙" : "启用蓝牙",
-      "扫描设备"
+      btMgr && btMgr->isEnabled() ? "禁用藍芽" : "啟用藍芽",
+      "掃描裝置"
   };
 
   for (int i = 0; i < 2; i++) {
@@ -342,7 +342,7 @@ void BluetoothSettingsActivity::renderMainMenu() {
   }
 
   // Button hints
-  const auto labels = mappedInput.mapLabels("返回", "打开", "左", "右");
+  const auto labels = mappedInput.mapLabels("返回", "開啟", "左", "右");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();
@@ -355,7 +355,7 @@ void BluetoothSettingsActivity::renderDeviceList() {
   renderer.clearScreen();
 
   if (!btMgr) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "蓝牙错误");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "藍芽錯誤");
     renderer.displayBuffer();
     return;
   }
@@ -371,18 +371,18 @@ void BluetoothSettingsActivity::renderDeviceList() {
   const auto& connectedDevices = btMgr->getConnectedDevices();
 
   // Header
-  std::string headerText = "蓝牙设备";
+  std::string headerText = "藍芽裝置";
   if (btMgr->isScanning()) {
-    headerText += " (扫描中...)";
+    headerText += " (掃描中...)";
   }
   renderer.drawCenteredText(UI_12_FONT_ID, 15, headerText.c_str(), true, EpdFontFamily::BOLD);
 
   // Device count
   char countStr[32];
   if (btMgr->isScanning()) {
-    snprintf(countStr, sizeof(countStr), "扫描中 - %zu 个设备", devices.size());
+    snprintf(countStr, sizeof(countStr), "掃描中 - %zu 個裝置", devices.size());
   } else {
-    snprintf(countStr, sizeof(countStr), "找到 %zu 个设备", devices.size());
+    snprintf(countStr, sizeof(countStr), "找到 %zu 個裝置", devices.size());
   }
   renderer.drawText(SMALL_FONT_ID, 20, 45, countStr);
 
@@ -431,7 +431,7 @@ void BluetoothSettingsActivity::renderDeviceList() {
   if (static_cast<int>(devices.size()) == selectedIndex) {
     renderer.drawText(UI_10_FONT_ID, 5, actionStartY, ">");
   }
-  renderer.drawText(UI_10_FONT_ID, 25, actionStartY, "< 刷新扫描 >");
+  renderer.drawText(UI_10_FONT_ID, 25, actionStartY, "< 重新整理掃描 >");
   
   // Disconnect button (if any connected)
   if (!connectedDevices.empty()) {
@@ -439,11 +439,11 @@ void BluetoothSettingsActivity::renderDeviceList() {
     if (actionIndex + 1 == selectedIndex) {
       renderer.drawText(UI_10_FONT_ID, 5, disconnectY, ">");
     }
-    renderer.drawText(UI_10_FONT_ID, 25, disconnectY, "< 断开连接 >");
+    renderer.drawText(UI_10_FONT_ID, 25, disconnectY, "< 斷開連線 >");
   }
 
   // Button hints
-  const auto labels = mappedInput.mapLabels("返回", "连接", "刷新", "");
+  const auto labels = mappedInput.mapLabels("返回", "連線", "重新整理", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

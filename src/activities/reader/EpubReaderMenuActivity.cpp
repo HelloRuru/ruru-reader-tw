@@ -139,7 +139,7 @@ void EpubReaderMenuActivity::renderScreen() {
   }
 
   // Footer / Hints
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "向上", "向下");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "向上", "向下");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

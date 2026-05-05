@@ -26,21 +26,21 @@ bool deleteFileOrDir(const std::string& fullPath) {
     std::string dirPath = fullPath.substr(0, fullPath.length() - 1);
     bool deleted = SdMan.removeDir(dirPath.c_str());
     if (deleted) {
-      Serial.printf("[删除] 成功删除一级文件夹：%s\n", dirPath.c_str());
+      Serial.printf("[刪除] 成功刪除一級資料夾：%s\n", dirPath.c_str());
     } else {
-      Serial.printf("[删除] 失败删除一级文件夹（非空/不存在）：%s\n", dirPath.c_str());
+      Serial.printf("[刪除] 失敗刪除一級資料夾（非空/不存在）：%s\n", dirPath.c_str());
     }
     return deleted;
   } else {
     if (!SdMan.exists(fullPath.c_str())) {
-      Serial.printf("[删除] 文件不存在：%s\n", fullPath.c_str());
+      Serial.printf("[刪除] 檔案不存在：%s\n", fullPath.c_str());
       return false;
     }
     bool deleted = SdMan.remove(fullPath.c_str());
     if (deleted) {
-      Serial.printf("[删除] 成功删除文件：%s\n", fullPath.c_str());
+      Serial.printf("[刪除] 成功刪除檔案：%s\n", fullPath.c_str());
     } else {
-      Serial.printf("[删除] 失败删除文件：%s\n", fullPath.c_str());
+      Serial.printf("[刪除] 失敗刪除檔案：%s\n", fullPath.c_str());
     }
     return deleted;
   }
@@ -49,24 +49,24 @@ bool deleteFileOrDir(const std::string& fullPath) {
 bool copyFile(const char* srcPath, const char* dstPath) {
   // 检查源文件是否存在
   if (!SdMan.exists(srcPath)) {
-    Serial.printf("[复制] 源文件不存在：%s\n", srcPath);
+    Serial.printf("[複製] 原始檔不存在：%s\n", srcPath);
     return false;
   }
   // 检查目标文件是否已存在
   if (SdMan.exists(dstPath)) {
-    Serial.printf("[复制] 目标文件已存在：%s\n", dstPath);
+    Serial.printf("[複製] 目標檔案已存在：%s\n", dstPath);
     return false;
   }
 
   FsFile srcFile, dstFile;
   // 打开源文件
   if (!SdMan.openFileForRead("FileSelection", srcPath, srcFile)) {
-    Serial.printf("[复制] 打开源文件失败：%s\n", srcPath);
+    Serial.printf("[複製] 開啟原始檔失敗：%s\n", srcPath);
     return false;
   }
   // 打开目标文件（创建新文件）
   if (!SdMan.openFileForWrite("FileSelection", dstPath, dstFile)) {
-    Serial.printf("[复制] 创建目标文件失败：%s\n", dstPath);
+    Serial.printf("[複製] 建立目標檔案失敗：%s\n", dstPath);
     srcFile.close();
     return false;
   }
@@ -82,22 +82,22 @@ bool copyFile(const char* srcPath, const char* dstPath) {
   srcFile.close();
   dstFile.close();
   
-  Serial.printf("[复制] 成功：%s → %s\n", srcPath, dstPath);
+  Serial.printf("[複製] 成功：%s → %s\n", srcPath, dstPath);
   return true;
 }
 //复制文件夹
 bool copyDir(const char* srcPath, const char* dstPath) {
   // 检查源文件夹是否存在
   if (!SdMan.exists(srcPath)) {
-    Serial.printf("[复制] 源文件夹不存在：%s\n", srcPath);
+    Serial.printf("[複製] 原始檔夾不存在：%s\n", srcPath);
     return false;
   }
   // 创建目标文件夹
   if (!SdMan.mkdir(dstPath, true)) {
-    Serial.printf("[复制] 创建目标文件夹失败：%s\n", dstPath);
+    Serial.printf("[複製] 建立目標資料夾失敗：%s\n", dstPath);
     return false;
   }
-  Serial.printf("[复制] 文件夹成功：%s → %s\n", srcPath, dstPath);
+  Serial.printf("[複製] 資料夾成功：%s → %s\n", srcPath, dstPath);
   return true;
 }
 
@@ -163,7 +163,7 @@ void MyLibraryActivity::doSearch(const char* keyword) {
   originalBasePath = basepath;
   searchResults.clear();
   
-  Serial.printf("[搜索] 开始搜索 %s 及其子目录中包含'%s'的文件\n", basepath.c_str(), SEARCH_KEYWORD);
+  Serial.printf("[搜尋] 開始搜尋 %s 及其子目錄中包含'%s'的檔案\n", basepath.c_str(), SEARCH_KEYWORD);
   // 调用递归搜索（传char数组）
   searchFilesRecursive(basepath, SEARCH_KEYWORD, searchResults);
   
@@ -174,10 +174,10 @@ void MyLibraryActivity::doSearch(const char* keyword) {
   if (searchResults.empty()) {
     // 提示文字适配char数组
     char emptyHint[128];
-    snprintf(emptyHint, sizeof(emptyHint), "未找到含'%s'的文件", SEARCH_KEYWORD);
-    Serial.printf("[搜索] %s\n", emptyHint);
+    snprintf(emptyHint, sizeof(emptyHint), "未找到含'%s'的檔案", SEARCH_KEYWORD);
+    Serial.printf("[搜尋] %s\n", emptyHint);
   } else {
-    Serial.printf("[搜索] 共找到 %d 个匹配文件\n", searchResults.size());
+    Serial.printf("[搜尋] 共找到 %d 個匹配檔案\n", searchResults.size());
   }
 }
 // 打开键盘输入Activity（核心修复）
@@ -186,7 +186,7 @@ void MyLibraryActivity::executeSearch() {
   exitActivity();
   updateRequired = true;
   enterNewActivity(new KeyboardEntryActivity(
-      renderer, mappedInput, "输入搜索关键词", SEARCH_KEYWORD, 10,
+      renderer, mappedInput, "輸入搜尋關鍵詞", SEARCH_KEYWORD, 10,
       63,     // 最大长度63，与其它地方保持一致
       false,  // 非密码模式
       [this](const std::string& keyword) {
@@ -421,7 +421,7 @@ void MyLibraryActivity::loop() {
             loadFiles();     // 普通模式：重新加载
           }
         } else {
-          Serial.printf("[删除] 需长按Confirm确认删除\n");
+          Serial.printf("[刪除] 需長按Confirm確認刪除\n");
         }
         break;
 
@@ -429,20 +429,20 @@ void MyLibraryActivity::loop() {
         copySourcePath = fullPath; // 改用统一的fullPath
         hasCopyData = true;
         isCutMode = false;
-        Serial.printf("[复制] 已选中：%s\n", copySourcePath.c_str());
+        Serial.printf("[複製] 已選中：%s\n", copySourcePath.c_str());
         break;
 
       case TopOption::CUT: 
         copySourcePath = fullPath; // 改用统一的fullPath
         hasCopyData = true;
         isCutMode = true;
-        Serial.printf("[剪切] 已选中：%s（粘贴后将删除源文件）\n", copySourcePath.c_str());
+        Serial.printf("[剪下] 已選中：%s（貼上後將刪除原始檔）\n", copySourcePath.c_str());
         break;
 
       case TopOption::PASTE: 
       {
         if (!hasCopyData) {
-          Serial.printf("[粘贴] 无待复制/剪切内容\n");
+          Serial.printf("[貼上] 無待複製/剪下內容\n");
           break;
         }
         std::string dstPath = basepath;
@@ -459,7 +459,7 @@ void MyLibraryActivity::loop() {
         }
 
         if (pasteSuccess && isCutMode) {
-          Serial.printf("[剪切] 粘贴成功，删除源文件：%s\n", copySourcePath.c_str());
+          Serial.printf("[剪下] 貼上成功，刪除原始檔：%s\n", copySourcePath.c_str());
           deleteFileOrDir(copySourcePath);
           isCutMode = false;
         }
@@ -572,8 +572,8 @@ void MyLibraryActivity::render() const {
   auto folderName = basepath == "/" ? "SD card" : basepath.substr(basepath.rfind('/') + 1).c_str();
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, folderName);
   //开始添加
-  //constexpr const char* topItems[7] = {"打开", "删除", "复制", "剪切", "粘贴", "搜索", "取消搜索"};
-  constexpr const char* topItems[5] = {"打开", "删除", "复制", "剪切", "粘贴"};
+  //constexpr const char* topItems[7] = {"開啟", "刪除", "複製", "剪下", "貼上", "搜尋", "取消搜尋"};
+  constexpr const char* topItems[5] = {"開啟", "刪除", "複製", "剪下", "貼上"};
   constexpr int margin = 10;
   constexpr int menuSpacing = 5;
   const int menuTileWidth = (pageWidth - 2 * margin - 3 * menuSpacing) / 4;
@@ -615,8 +615,8 @@ void MyLibraryActivity::render() const {
   if (displayList.empty()) {
       // 先定义提示文本的基础部分
       char emptyHint[128];
-      // 拼接 "未找到含'关键词'的文件"
-      snprintf(emptyHint, sizeof(emptyHint), "未找到含'%s'的文件", SEARCH_KEYWORD);
+      // 拼接 "未找到含'關鍵詞'的檔案"
+      snprintf(emptyHint, sizeof(emptyHint), "未找到含'%s'的檔案", SEARCH_KEYWORD);
       // 赋值给emptyText
       std::string emptyText = isSearchMode ? emptyHint : "No books found";
       renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentTop + 20, emptyText.c_str());
@@ -632,7 +632,7 @@ void MyLibraryActivity::render() const {
   //侧边绘制，防止有的用户问
   GUI.drawSideButtonHints(renderer, "向上", "向下");
   // Help text
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "左选", "右选");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "左選", "右選");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

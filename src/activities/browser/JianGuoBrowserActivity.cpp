@@ -88,7 +88,7 @@ public:
         if (!requestPath.endsWith("/")) requestPath += "/";
 
         // 【调试】打印路径
-        Serial.printf("[DAV] PROPFIND 请求路径: %s\n", requestPath.c_str());
+        Serial.printf("[DAV] PROPFIND 請求路徑: %s\n", requestPath.c_str());
 
         // Base64 认证
         String authStr = _user + ":" + _pass;
@@ -197,7 +197,7 @@ void JianGuoBrowserActivity::onEnter() {
   currentPath = "";
   selectorIndex = 0;
   errorMessage.clear();
-  statusMessage = "检查WiFi...";
+  statusMessage = "檢查WiFi...";
   updateRequired = true;
 
 
@@ -242,7 +242,7 @@ void JianGuoBrowserActivity::loop() {
     if (mappedInput.isPressed(MappedInputManager::Button::Confirm) && mappedInput.getHeldTime() >= goHomeMs) {
       if (WiFi.status() == WL_CONNECTED) {
         state = BrowserState::LOADING;
-        statusMessage = "加载中...";
+        statusMessage = "載入中...";
         updateRequired = true;
         fetchFeed(currentPath);
       } else {
@@ -323,7 +323,7 @@ void JianGuoBrowserActivity::render() const {
   const auto pageHeight = renderer.getScreenHeight();
 
   // 标题：坚果云文件目录
-  renderer.drawCenteredText(UI_12_FONT_ID, 15, "坚果云文件目录", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_12_FONT_ID, 15, "堅果雲檔案目錄", true, EpdFontFamily::BOLD);
 
   // 检查WiFi状态
   if (state == BrowserState::CHECK_WIFI) {
@@ -344,7 +344,7 @@ void JianGuoBrowserActivity::render() const {
   }
  //下载成功
   if (state == BrowserState::DOWNLOADING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 40, "下载中...");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 40, "下載中...");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 10, statusMessage.c_str());
     if (downloadTotal > 0) {
         const int barWidth = renderer.getScreenWidth() - 100;
@@ -359,20 +359,20 @@ void JianGuoBrowserActivity::render() const {
 
   // 错误状态
   if (state == BrowserState::ERROR) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "失败:");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "失敗:");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, errorMessage.c_str());
-    const auto labels = mappedInput.mapLabels("返回", "重试", "", "");
+    const auto labels = mappedInput.mapLabels("返回", "重試", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
   }
 
   // 浏览目录状态（核心）
-  const auto labels = mappedInput.mapLabels("返回", "打开", "", "");
+  const auto labels = mappedInput.mapLabels("返回", "開啟", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   if (entries.empty()) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "当前目录无文件/文件夹");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "當前目錄無檔案/資料夾");
     renderer.displayBuffer();
     return;
   }
@@ -411,7 +411,7 @@ void JianGuoBrowserActivity::fetchFeed(const std::string& subPath) {
 
     if (username.empty() || appPwd.empty()) {
         state = BrowserState::ERROR;
-        errorMessage = "请先配置坚果云账号/应用密码";
+        errorMessage = "請先配置堅果雲賬號/應用密碼";
         updateRequired = true;
         return;
     }
@@ -424,14 +424,14 @@ void JianGuoBrowserActivity::fetchFeed(const std::string& subPath) {
         dav1.begin("https://dav.jianguoyun.com/dav/", username.c_str(), appPwd.c_str());
         dav1.setTimeout(8000);
 
-        Serial.printf("\n[========== 文件夹1: %s ==========]\n", SETTINGS.jgBookFolder);
+        Serial.printf("\n[========== 資料夾1: %s ==========]\n", SETTINGS.jgBookFolder);
         String xmlResult1;
         int responseCode1 = dav1.propfind(subPath.c_str(), xmlResult1);
         if (responseCode1 == 207) {
             parseXmlEntries(xmlResult1, subPath, "jg", entries);
-            Serial.printf("[JG] 文件夹1 成功，当前共 %d 个条目\n", entries.size());
+            Serial.printf("[JG] 資料夾1 成功，當前共 %d 個條目\n", entries.size());
         } else {
-            Serial.printf("[JG] 文件夹1 失败（码：%d）\n", responseCode1);
+            Serial.printf("[JG] 資料夾1 失敗（碼：%d）\n", responseCode1);
         }
         dav1.end();
     }
@@ -443,20 +443,20 @@ void JianGuoBrowserActivity::fetchFeed(const std::string& subPath) {
         dav2.setTimeout(8000);
         dav2.setBasePath("legado/books");  // 新增：设置第二个文件夹路径
 
-        Serial.printf("\n[========== 文件夹2: legado/books ==========]\n");
+        Serial.printf("\n[========== 資料夾2: legado/books ==========]\n");
         String xmlResult2;
         int responseCode2 = dav2.propfind(subPath.c_str(), xmlResult2);
         if (responseCode2 == 207) {
             parseXmlEntries(xmlResult2, subPath, "legado", entries);
-            Serial.printf("[JG] 文件夹2 成功，当前共 %d 个条目\n", entries.size());
+            Serial.printf("[JG] 資料夾2 成功，當前共 %d 個條目\n", entries.size());
         } else {
-            Serial.printf("[JG] 文件夹2 失败（码：%d）\n", responseCode2);
+            Serial.printf("[JG] 資料夾2 失敗（碼：%d）\n", responseCode2);
         }
         dav2.end();
     }
 
     Serial.printf("[================================]\n");
-    Serial.printf("[%lu] [JG] 共找到 %d 个条目\n", millis(), entries.size());
+    Serial.printf("[%lu] [JG] 共找到 %d 個條目\n", millis(), entries.size());
 
     selectorIndex = 0;
     state = BrowserState::BROWSING;
@@ -513,7 +513,7 @@ void JianGuoBrowserActivity::navigateToEntry(const WebDAVEntry& entry) {
 
   // 加载子目录
   state = BrowserState::LOADING;
-  statusMessage = "加载中...";
+  statusMessage = "載入中...";
   entries.clear();
   selectorIndex = 0;
   updateRequired = true;
@@ -531,7 +531,7 @@ void JianGuoBrowserActivity::navigateBack() {
     navigationHistory.pop_back();
 
     state = BrowserState::LOADING;
-    statusMessage = "加载中...";
+    statusMessage = "載入中...";
     entries.clear();
     selectorIndex = 0;
     updateRequired = true;
@@ -544,7 +544,7 @@ void JianGuoBrowserActivity::navigateBack() {
 void JianGuoBrowserActivity::checkAndConnectWifi() {
   if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
     state = BrowserState::LOADING;
-    statusMessage = "加载中...";
+    statusMessage = "載入中...";
     updateRequired = true;
     fetchFeed(currentPath);
     return;
@@ -568,17 +568,17 @@ void JianGuoBrowserActivity::onWifiSelectionComplete(const bool connected) {
   exitActivity();
 
   if (connected) {
-    Serial.printf("[%lu] [JG] WiFi已连接，加载目录\n", millis());
+    Serial.printf("[%lu] [JG] WiFi已連線，載入目錄\n", millis());
     state = BrowserState::LOADING;
-    statusMessage = "加载中...";
+    statusMessage = "載入中...";
     updateRequired = true;
     fetchFeed(currentPath);
   } else {
-    Serial.printf("[%lu] [JG] WiFi连接失败\n", millis());
+    Serial.printf("[%lu] [JG] WiFi連線失敗\n", millis());
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
     state = BrowserState::ERROR;
-    errorMessage = "WiFi连接失败";
+    errorMessage = "WiFi連線失敗";
     updateRequired = true;
   }
 }
@@ -608,7 +608,7 @@ void JianGuoBrowserActivity::downloadBook(const WebDAVEntry& book) {
     }
     
     downloadUrl += urlEncode(book.title);
-    Serial.printf("[%lu] [JG] 准备下载: %s (来源:%s)\n", millis(), 
+    Serial.printf("[%lu] [JG] 準備下載: %s (來源:%s)\n", millis(), 
                   downloadUrl.c_str(), book.sourceFolder.c_str());
 
     // === 根据扩展名选择本地保存目录 ===
@@ -618,7 +618,7 @@ void JianGuoBrowserActivity::downloadBook(const WebDAVEntry& book) {
     } else if (endsWith(book.title, ".epdfont")) {
         targetDir = "/fonts";
     } else {
-        targetDir = "/坚果云";
+        targetDir = "/堅果雲";
     }
 
     if (!targetDir.empty()) {
@@ -647,7 +647,7 @@ void JianGuoBrowserActivity::downloadBook(const WebDAVEntry& book) {
     );
 
     if (result == HttpDownloader::OK) {
-        Serial.printf("[%lu] [JG] 下载完成: %s\n", millis(), localPath.c_str());
+        Serial.printf("[%lu] [JG] 下載完成: %s\n", millis(), localPath.c_str());
 
         if (endsWith(book.title, ".epub")) {
             Epub epub(localPath, "/.crosspoint");
@@ -658,7 +658,7 @@ void JianGuoBrowserActivity::downloadBook(const WebDAVEntry& book) {
         updateRequired = true;
     } else {
         state = BrowserState::ERROR;
-        errorMessage = "下载失败";
+        errorMessage = "下載失敗";
         updateRequired = true;
     }
 }

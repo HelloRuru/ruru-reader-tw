@@ -63,7 +63,7 @@ void SettingsActivity::onEnter() {
   //systemSettings.push_back(SettingInfo::Action("bluetooth"));
   systemSettings.push_back(SettingInfo::Action("KOReader Sync"));
   systemSettings.push_back(SettingInfo::Action("OPDS Browser"));
-  systemSettings.push_back(SettingInfo::Action("坚果云信息配置"));
+  systemSettings.push_back(SettingInfo::Action("堅果雲資訊配置"));
   systemSettings.push_back(SettingInfo::Action("Clear Cache"));
   systemSettings.push_back(SettingInfo::Action("Check for updates"));
   systemSettings.push_back(SettingInfo::Action("Set Custom Font Family"));
@@ -226,7 +226,7 @@ void SettingsActivity::toggleCurrentSetting() {
         updateRequired = true;
             }));
       xSemaphoreGive(renderingMutex);
-    } else if (strcmp(setting.name, "坚果云信息配置") == 0) {
+    } else if (strcmp(setting.name, "堅果雲資訊配置") == 0) {
     xSemaphoreTake(renderingMutex, portMAX_DELAY);
     exitActivity();
     enterNewActivity(new JianGuoYunSettingsActivity(renderer, mappedInput, [this] {
@@ -330,7 +330,7 @@ void SettingsActivity::render() const {
           const bool value = SETTINGS.*(settings[i].valuePtr);
           // 核心修改：ON/OFF 转 开启/关闭
           valueText = value ? getChineseName("ON") : getChineseName("OFF");
-          // 如果你没给ON/OFF加映射，也可以直接写：valueText = value ? "开启" : "关闭";
+          // 如果你没给ON/OFF加映射，也可以直接写：valueText = value ? "開啟" : "關閉";
         } else if (settings[i].type == SettingType::ENUM && settings[i].valuePtr != nullptr) {
           const uint8_t value = SETTINGS.*(settings[i].valuePtr);
           // 核心修改：枚举值（如Tight/Normal）转中文

@@ -244,7 +244,7 @@ void RoundedRaffTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, con
   } else {
     renderer.fillRoundedRect(tileX, tileY, tileWidth, tileHeight, kRowRadius, Color::LightGray);
     renderer.drawCenteredText(kTitleFontId, rect.y + rect.height / 2 - renderer.getLineHeight(kTitleFontId) / 2,
-                              "暂无开启书籍");  // 原 tr(STR_NO_OPEN_BOOK) — ChineseType 沒 I18n 系統
+                              "暫無開啟書籍");  // 原 tr(STR_NO_OPEN_BOOK) — ChineseType 沒 I18n 系統
   }
 }
 

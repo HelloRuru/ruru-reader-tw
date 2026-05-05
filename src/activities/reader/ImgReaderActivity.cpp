@@ -189,20 +189,20 @@ void ImgReaderActivity::renderImage() {
 void ImgReaderActivity::renderMenuOverlay() const {
   renderer.fillRect(20, 250, renderer.getScreenWidth() - 40, 300, false);
   renderer.drawRect(20, 250, renderer.getScreenWidth() - 40, 300, true);
-  renderer.drawCenteredText(UI_12_FONT_ID, 275, "图片操作", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_12_FONT_ID, 275, "圖片操作", true, EpdFontFamily::BOLD);
 
-  const char* item0 = (menuIndex == 0) ? "> 设为阅读背景" : "  设为阅读背景";
-  const char* item1 = (menuIndex == 1) ? "> 设为自定义睡眠屏" : "  设为自定义睡眠屏";
-  const char* item2 = (menuIndex == 2) ? "> 设为透明壁纸" : "  设为透明壁纸";
-  const char* item3 = (menuIndex == 3) ? "> 旋转180度" : "  旋转180度";
-  const char* item4 = (menuIndex == 4) ? "> 左右翻转" : "  左右翻转";
+  const char* item0 = (menuIndex == 0) ? "> 設為閱讀背景" : "  設為閱讀背景";
+  const char* item1 = (menuIndex == 1) ? "> 設為自定義睡眠屏" : "  設為自定義睡眠屏";
+  const char* item2 = (menuIndex == 2) ? "> 設為透明桌布" : "  設為透明桌布";
+  const char* item3 = (menuIndex == 3) ? "> 旋轉180度" : "  旋轉180度";
+  const char* item4 = (menuIndex == 4) ? "> 左右翻轉" : "  左右翻轉";
   renderer.drawCenteredText(SMALL_FONT_ID, 325, item0);
   renderer.drawCenteredText(SMALL_FONT_ID, 355, item1);
   renderer.drawCenteredText(SMALL_FONT_ID, 385, item2);
   renderer.drawCenteredText(SMALL_FONT_ID, 415, item3);
   renderer.drawCenteredText(SMALL_FONT_ID, 445, item4);
 
-  const auto labels = mappedInput.mapLabels("返回", "应用", "上一项", "下一项");
+  const auto labels = mappedInput.mapLabels("返回", "應用", "上一項", "下一項");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);
 }
@@ -558,25 +558,25 @@ void ImgReaderActivity::executeMenuAction() {
   switch (item) {
     case ActionMenuItem::SET_READING_BG:
       ok = setAsReadingBackground();
-      showOperationResult(ok ? "阅读背景设置完成" : "仅支持 PNG/JPG/BMP / 设置失败");
+      showOperationResult(ok ? "閱讀背景設定完成" : "僅支援 PNG/JPG/BMP / 設定失敗");
       break;
     case ActionMenuItem::SET_CUSTOM_SLEEP:
       ok = setAsCustomSleepScreen();
-      showOperationResult(ok ? "自定义睡眠屏幕保存成功" : "保存失败");
+      showOperationResult(ok ? "自定義睡眠螢幕儲存成功" : "儲存失敗");
       break;
     case ActionMenuItem::SET_TRANSPARENT_WALLPAPER:
       ok = setAsTransparentWallpaper();
-      showOperationResult(ok ? "透明壁纸保存成功" : "仅支持 PNG / 保存失败");
+      showOperationResult(ok ? "透明桌布儲存成功" : "僅支援 PNG / 儲存失敗");
       break;
     case ActionMenuItem::ROTATE_180:
       rotate180Enabled = !rotate180Enabled;
       ok = true;
-      showOperationResult(ok ? "旋转成功" : "旋转失败");
+      showOperationResult(ok ? "旋轉成功" : "旋轉失敗");
       break;
     case ActionMenuItem::FLIP_HORIZONTAL:
       flipHorizontalEnabled = !flipHorizontalEnabled;
       ok = true;
-      showOperationResult(ok ? "翻转成功" : "翻转失败");
+      showOperationResult(ok ? "翻轉成功" : "翻轉失敗");
       break;
   }
 

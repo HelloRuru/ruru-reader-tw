@@ -339,7 +339,7 @@ void KOReaderSyncActivity::render() {
     }
     renderer.drawText(UI_10_FONT_ID, 20, optionY + optionHeight * 2, "Cancel", selectedOption != 2);
 
-    const auto labels = mappedInput.mapLabels("", "选择", "", "");
+    const auto labels = mappedInput.mapLabels("", "選擇", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
@@ -349,7 +349,7 @@ void KOReaderSyncActivity::render() {
     renderer.drawCenteredText(UI_10_FONT_ID, 280, "No remote progress found", true, EpdFontFamily::BOLD);
     renderer.drawCenteredText(UI_10_FONT_ID, 320, "Upload current position?");
 
-    const auto labels = mappedInput.mapLabels("取消", "上传", "", "");
+    const auto labels = mappedInput.mapLabels("取消", "上傳", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;

@@ -57,14 +57,14 @@ void ClearCacheActivity::render() {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawCenteredText(UI_12_FONT_ID, 15, "清除缓存", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_12_FONT_ID, 15, "清除快取", true, EpdFontFamily::BOLD);
 
   if (state == WARNING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 60, "这将清除所有缓存的书籍数据。", true);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, "所有阅读进度将丢失！", true,
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 60, "這將清除所有快取的書籍資料。", true);
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, "所有閱讀進度將丟失！", true,
                               EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, "书籍需要重新索引", true);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 30, "才能再次打开。", true);
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, "書籍需要重新索引", true);
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 30, "才能再次開啟。", true);
 
     const auto labels = mappedInput.mapLabels("<< 取消", "清除", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -73,16 +73,16 @@ void ClearCacheActivity::render() {
   }
 
   if (state == CLEARING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "缓存清除中...", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "快取清除中...", true, EpdFontFamily::BOLD);
     renderer.displayBuffer();
     return;
   }
 
   if (state == SUCCESS) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "缓存已清除", true, EpdFontFamily::BOLD);
-    String resultText = String(clearedCount) + " 项已清除";
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "快取已清除", true, EpdFontFamily::BOLD);
+    String resultText = String(clearedCount) + " 項已清除";
     if (failedCount > 0) {
-      resultText += ", " + String(failedCount) + " 项清除失败";
+      resultText += ", " + String(failedCount) + " 項清除失敗";
     }
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, resultText.c_str());
 
@@ -93,8 +93,8 @@ void ClearCacheActivity::render() {
   }
 
   if (state == FAILED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "缓存清除失败", true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, "请检查串口输出以获取详细信息");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "快取清除失敗", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, "請檢查串列埠輸出以獲取詳細資訊");
 
     const auto labels = mappedInput.mapLabels("« 返回", "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

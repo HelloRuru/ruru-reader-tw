@@ -192,14 +192,14 @@ void OpdsBookBrowserActivity::render() const {
   if (state == BrowserState::ERROR) {
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "Error:");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, errorMessage.c_str());
-    const auto labels = mappedInput.mapLabels("« 返回", "重试", "", "");
+    const auto labels = mappedInput.mapLabels("« 返回", "重試", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
   }
 
   if (state == BrowserState::DOWNLOADING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 40, "下载中...");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 40, "下載中...");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 10, statusMessage.c_str());
     if (downloadTotal > 0) {
       const int barWidth = pageWidth - 100;
@@ -359,18 +359,18 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
       });
 
   if (result == HttpDownloader::OK) {
-    Serial.printf("[%lu] [OPDS] 下载完成: %s\n", millis(), filename.c_str());
+    Serial.printf("[%lu] [OPDS] 下載完成: %s\n", millis(), filename.c_str());
 
     // Invalidate any existing cache for this file to prevent stale metadata issues
     Epub epub(filename, "/.crosspoint");
     epub.clearCache();
-    Serial.printf("[%lu] [OPDS] 清除缓存: %s\n", millis(), filename.c_str());
+    Serial.printf("[%lu] [OPDS] 清除快取: %s\n", millis(), filename.c_str());
 
     state = BrowserState::BROWSING;
     updateRequired = true;
   } else {
     state = BrowserState::ERROR;
-    errorMessage = "下载失败";
+    errorMessage = "下載失敗";
     updateRequired = true;
   }
 }

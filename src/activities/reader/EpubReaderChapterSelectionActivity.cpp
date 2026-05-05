@@ -147,8 +147,8 @@ void EpubReaderChapterSelectionActivity::renderScreen() {
 
   // Manual centering to honor content gutters.
   const int titleX =
-      contentX + (contentWidth - renderer.getTextWidth(UI_12_FONT_ID, "目录", EpdFontFamily::BOLD)) / 2;
-  renderer.drawText(UI_12_FONT_ID, titleX, 15 + contentY, "目录", true, EpdFontFamily::BOLD);
+      contentX + (contentWidth - renderer.getTextWidth(UI_12_FONT_ID, "目錄", EpdFontFamily::BOLD)) / 2;
+  renderer.drawText(UI_12_FONT_ID, titleX, 15 + contentY, "目錄", true, EpdFontFamily::BOLD);
 
   const auto pageStartIndex = selectorIndex / pageItems * pageItems;
   // Highlight only the content area, not the hint gutters.
@@ -170,7 +170,7 @@ void EpubReaderChapterSelectionActivity::renderScreen() {
     renderer.drawText(UI_10_FONT_ID, indentSize, displayY, chapterName.c_str(), !isSelected);
   }
 
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "向上", "向下");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "向上", "向下");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

@@ -8,11 +8,11 @@
 
 namespace {
 constexpr int MENU_ITEM_COUNT = 3;
-const char* MENU_ITEMS[MENU_ITEM_COUNT] = {"加入网络", "连接到 Calibre", "创建热点"};
+const char* MENU_ITEMS[MENU_ITEM_COUNT] = {"加入網路", "連線到 Calibre", "建立熱點"};
 const char* MENU_DESCRIPTIONS[MENU_ITEM_COUNT] = {
-    "连接到现有的 WiFi 网络",
-    "使用 Calibre 无线设备传输",
-    "x4创建热点，使用手机连接传书",
+    "連線到現有的 WiFi 網路",
+    "使用 Calibre 無線裝置傳輸",
+    "x4建立熱點，使用手機連線傳書",
 };
 }  // namespace
 
@@ -106,10 +106,10 @@ void NetworkModeSelectionActivity::render() const {
   const auto pageHeight = renderer.getScreenHeight();
 
   // Draw header
-  renderer.drawCenteredText(UI_12_FONT_ID, 15, "wifi功能设置", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_12_FONT_ID, 15, "wifi功能設定", true, EpdFontFamily::BOLD);
 
   // Draw subtitle
-  renderer.drawCenteredText(UI_10_FONT_ID, 50, "你想如何连接?");
+  renderer.drawCenteredText(UI_10_FONT_ID, 50, "你想如何連線?");
 
   // Draw menu items centered on screen
   constexpr int itemHeight = 70;  // Height for each menu item (including description)
@@ -131,7 +131,7 @@ void NetworkModeSelectionActivity::render() const {
   }
 
   // Draw help text at bottom
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "", "");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

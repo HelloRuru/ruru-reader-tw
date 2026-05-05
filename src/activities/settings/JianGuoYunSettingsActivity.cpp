@@ -14,7 +14,7 @@
 // 定义坚果云配置菜单选项（和Calibre结构一致）
 namespace {
 constexpr int MENU_ITEMS = 3;
-const char* menuNames[MENU_ITEMS] = {"坚果云账号", "应用密码", "电子书文件夹"};
+const char* menuNames[MENU_ITEMS] = {"堅果雲賬號", "應用密碼", "電子書資料夾"};
 
 // 扩展CrossPointSettings，新增坚果云配置字段（最小侵入，复用原有存储）
 // 若原有SETTINGS结构体未定义这些字段，需先在CrossPointSettings.h中添加：
@@ -94,7 +94,7 @@ void JianGuoYunSettingsActivity::handleSelection() {
         // 配置坚果云账号（邮箱）
         exitActivity();
         enterNewActivity(new KeyboardEntryActivity(
-            renderer, mappedInput, "输入坚果云账号", SETTINGS.jgUsername, 10,
+            renderer, mappedInput, "輸入堅果雲賬號", SETTINGS.jgUsername, 10,
             63,     // 最大长度63，和Calibre一致
             false,  // 非密码模式
             [this](const std::string& username) {
@@ -114,7 +114,7 @@ void JianGuoYunSettingsActivity::handleSelection() {
         // 配置坚果云应用密码
         exitActivity();
         enterNewActivity(new KeyboardEntryActivity(
-            renderer, mappedInput, "输入应用密码", SETTINGS.jgAppPassword, 10,
+            renderer, mappedInput, "輸入應用密碼", SETTINGS.jgAppPassword, 10,
             63,     // 最大长度63
             false,   // 密码模式（输入时隐藏）
             [this](const std::string& password) {
@@ -134,7 +134,7 @@ void JianGuoYunSettingsActivity::handleSelection() {
         // 配置电子书文件夹路径
         exitActivity();
         enterNewActivity(new KeyboardEntryActivity(
-            renderer, mappedInput, "电子书文件夹", SETTINGS.jgBookFolder, 10,
+            renderer, mappedInput, "電子書資料夾", SETTINGS.jgBookFolder, 10,
             127,    // 路径最大长度127，和Calibre的URL一致
             false,  // 非密码模式
             [this](const std::string& folder) {
@@ -173,10 +173,10 @@ void JianGuoYunSettingsActivity::render() {
     const auto pageWidth = renderer.getScreenWidth();
 
     // 标题（和Calibre风格一致）
-    renderer.drawCenteredText(UI_12_FONT_ID, 15, "坚果云配置", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_12_FONT_ID, 15, "堅果雲配置", true, EpdFontFamily::BOLD);
 
     // 提示文字（适配坚果云使用场景）
-    renderer.drawCenteredText(UI_10_FONT_ID, 40, "应用密码需在坚果云安全设置中创建");
+    renderer.drawCenteredText(UI_10_FONT_ID, 40, "應用密碼需在堅果雲安全設定中建立");
 
     // 选中项高亮（和Calibre交互视觉一致）
     renderer.fillRect(0, 70 + selectedIndex * 30 - 2, pageWidth - 1, 30);
@@ -203,7 +203,7 @@ void JianGuoYunSettingsActivity::render() {
     }
 
     // 按钮提示（中文适配，和Calibre一致）
-    const auto labels = mappedInput.mapLabels("« 返回", "选择", "", "");
+    const auto labels = mappedInput.mapLabels("« 返回", "選擇", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
     renderer.displayBuffer();

@@ -144,7 +144,7 @@ void RecentBooksActivity::render() const {
   }
 
   // Help text
-  const auto labels = mappedInput.mapLabels("« 主页", "打开", "向上", "向下");
+  const auto labels = mappedInput.mapLabels("« 主頁", "開啟", "向上", "向下");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

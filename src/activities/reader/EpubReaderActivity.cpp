@@ -421,7 +421,7 @@ void EpubReaderActivity::loop() {
       return;
     }
     if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
-      Serial.printf("[%lu] [ERS] 进入左边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入左邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Left+=5;
       xSemaphoreGive(renderingMutex);
@@ -429,7 +429,7 @@ void EpubReaderActivity::loop() {
       updateRequired = true;
     }
     if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
-      Serial.printf("[%lu] [ERS] 进入右边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入右邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Right+=5;
       xSemaphoreGive(renderingMutex);
@@ -438,7 +438,7 @@ void EpubReaderActivity::loop() {
       updateRequired = true;
     }
     if (mappedInput.wasPressed(MappedInputManager::Button::Up)) {
-      Serial.printf("[%lu] [ERS] 进入上边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入上邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Top+=5;
       xSemaphoreGive(renderingMutex);
@@ -446,16 +446,16 @@ void EpubReaderActivity::loop() {
       updateRequired = true;
     }
     if (mappedInput.wasPressed(MappedInputManager::Button::Down)) {
-      Serial.printf("[%lu] [ERS] 进入下边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入下邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Bottom+=5;
-      Serial.printf("[%lu] [ERS] Bottom为%d\n", millis(), SETTINGS.screenMargin_Bottom);
+      Serial.printf("[%lu] [ERS] Bottom為%d\n", millis(), SETTINGS.screenMargin_Bottom);
       xSemaphoreGive(renderingMutex);
       pendingMarginRelayout = true;
       updateRequired = true;
     }
     if (mappedInput.isPressed(MappedInputManager::Button::Left) && mappedInput.getHeldTime() >= 2000) {
-      Serial.printf("[%lu] [ERS] 进入左边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入左邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Left-=5;
       xSemaphoreGive(renderingMutex);
@@ -463,7 +463,7 @@ void EpubReaderActivity::loop() {
       updateRequired = true;
     }
     if (mappedInput.isPressed(MappedInputManager::Button::Right) && mappedInput.getHeldTime() >= 2000) {
-      Serial.printf("[%lu] [ERS] 进入右边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入右邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Right-=5;
       xSemaphoreGive(renderingMutex);
@@ -472,7 +472,7 @@ void EpubReaderActivity::loop() {
       updateRequired = true;
     }
     if (mappedInput.isPressed(MappedInputManager::Button::Up) && mappedInput.getHeldTime() >= 2000) {
-      Serial.printf("[%lu] [ERS] 进入上边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入上邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Top-=5;
       xSemaphoreGive(renderingMutex);
@@ -480,10 +480,10 @@ void EpubReaderActivity::loop() {
       updateRequired = true;
     }
     if (mappedInput.isPressed(MappedInputManager::Button::Down) && mappedInput.getHeldTime() >= 2000) {
-      Serial.printf("[%lu] [ERS] 进入下边距设置\n", millis());
+      Serial.printf("[%lu] [ERS] 進入下邊距設定\n", millis());
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       SETTINGS.screenMargin_Bottom-=5;
-      Serial.printf("[%lu] [ERS] Bottom为%d\n", millis(), SETTINGS.screenMargin_Bottom);
+      Serial.printf("[%lu] [ERS] Bottom為%d\n", millis(), SETTINGS.screenMargin_Bottom);
       xSemaphoreGive(renderingMutex);
       pendingMarginRelayout = true;
       updateRequired = true;
@@ -864,7 +864,7 @@ void EpubReaderActivity::renderScreen() {
   renderer.clearScreen();
     //加背景
     if(SETTINGS.ReadingScreenEnabled){
-      Serial.printf("[%lu] [ERS] 壁纸屏幕开启，渲染壁纸屏幕\n");
+      Serial.printf("[%lu] [ERS] 桌布螢幕開啟，渲染桌布螢幕\n");
       renderPngSleepScreen(renderer);
     }
 
@@ -939,10 +939,10 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
       renderer.drawRect(contentX, contentY, contentWidth, contentHeight, 3, true);
     }
 
-    const char* line1 = "进入边距设置";
-    const char* line2 = "请注意边框";
-    const char* line3 = "短按加边距";
-    const char* line4 = "长按减边距";
+    const char* line1 = "進入邊距設定";
+    const char* line2 = "請注意邊框";
+    const char* line3 = "短按加邊距";
+    const char* line4 = "長按減邊距";
     const int textW1 = renderer.getTextWidth(UI_12_FONT_ID, line1);
     const int textW2 = renderer.getTextWidth(UI_12_FONT_ID, line2);
     const int boxWidth = std::max(textW1, textW2) + 24;
@@ -1028,7 +1028,7 @@ void EpubReaderActivity::renderStatusBar(const int orientedMarginRight, const in
   //int statusBarMargin = renderer.getFontAscenderSize(SMALL_FONT_ID)/2;
   const auto textY = screenHeight - orientedMarginBottom - 8;
   int progressTextWidth = 0;
-  //Serial.printf("[%lu] [ERS] 测试一下位置变了吗: %d", millis(),textY);
+  //Serial.printf("[%lu] [ERS] 測試一下位置變了嗎: %d", millis(),textY);
 
   // Calculate progress in book
   const float sectionChapterProg = static_cast<float>(section->currentPage) / section->pageCount;

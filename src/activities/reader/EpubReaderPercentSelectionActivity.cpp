@@ -132,7 +132,7 @@ void EpubReaderPercentSelectionActivity::renderScreen() {
   renderer.drawCenteredText(SMALL_FONT_ID, barY + 30, "Left/Right: 1%  Up/Down: 10%", true);
 
   // Button hints follow the current front button layout.
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "-", "+");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "-", "+");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

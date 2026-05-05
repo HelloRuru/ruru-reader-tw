@@ -68,7 +68,7 @@ void JianGuoSyncActivity::onEnter() {
   matchedFileName = "";         // 清空文件名
   matchedFileUrl = "";          // 清空文件 URL
   errorMessage.clear();
-  statusMessage = "检查 WiFi...";
+  statusMessage = "檢查 WiFi...";
   updateRequired = true;
   downloadProgress = 0;
   downloadTotal = 0;
@@ -108,7 +108,7 @@ void JianGuoSyncActivity::loop() {
   if (state == BrowserState::ERROR) {
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       state = BrowserState::DOWNLOADING;
-      statusMessage = "重试中...";
+      statusMessage = "重試中...";
       updateRequired = true;
       downloadProgressFile();
     } else if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
@@ -161,14 +161,14 @@ if (state == BrowserState::SHOWING_RESULT) {
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     if (selectedOption == 0) {
       // 下载：应用云端进度
-      Serial.printf("[%lu] [JG] 选择下载，章节：%d\n", millis(), lastExtractedChapterIndex);
+      Serial.printf("[%lu] [JG] 選擇下載，章節：%d\n", millis(), lastExtractedChapterIndex);
       onSelectChapter(lastExtractedChapterIndex);
       onGoBack();
     } else {
       // 上传：上传当前进度
-      Serial.printf("[%lu] [JG] 选择上传，当前章节：%d\n", millis(), currentSpineIndex);
+      Serial.printf("[%lu] [JG] 選擇上傳，當前章節：%d\n", millis(), currentSpineIndex);
       state = BrowserState::UPLOADING;
-      statusMessage = "上传中...";
+      statusMessage = "上傳中...";
       updateRequired = true;
       uploadProgressFile();
     }
@@ -207,11 +207,11 @@ void JianGuoSyncActivity::render() const {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
 
-  renderer.drawCenteredText(UI_12_FONT_ID, 15, "阅读进度同步", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_12_FONT_ID, 15, "閱讀進度同步", true, EpdFontFamily::BOLD);
 
   // 检查 WiFi
   if (state == BrowserState::CHECK_WIFI) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "连接 WiFi 中...");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, "連線 WiFi 中...");
     const auto labels = mappedInput.mapLabels("返回", "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
@@ -220,7 +220,7 @@ void JianGuoSyncActivity::render() const {
 
   // 下载中
   if (state == BrowserState::DOWNLOADING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, "下载进度文件...");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, "下載進度檔案...");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, statusMessage.c_str());
     if (downloadTotal > 0) {
         const int barWidth = pageWidth - 100;
@@ -237,7 +237,7 @@ void JianGuoSyncActivity::render() const {
 
   // 上传中
   if (state == BrowserState::UPLOADING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, "上传进度文件...");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, "上傳進度檔案...");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, statusMessage.c_str());
     const auto labels = mappedInput.mapLabels("返回", "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -247,13 +247,13 @@ void JianGuoSyncActivity::render() const {
 
   // 显示结果（选择下载/上传）
   if (state == BrowserState::SHOWING_RESULT) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 50, "✓ 找到进度文件");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 50, "✓ 找到進度檔案");
     
     char infoBuf[64];
-    snprintf(infoBuf, sizeof(infoBuf), "云端章节：%d", lastExtractedChapterIndex);
+    snprintf(infoBuf, sizeof(infoBuf), "雲端章節：%d", lastExtractedChapterIndex);
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, infoBuf);
     
-    snprintf(infoBuf, sizeof(infoBuf), "本地章节：%d", currentSpineIndex);
+    snprintf(infoBuf, sizeof(infoBuf), "本地章節：%d", currentSpineIndex);
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 5, infoBuf);
 
     if (!lastExtractedBookName.empty()) {
@@ -267,20 +267,20 @@ void JianGuoSyncActivity::render() const {
     // 下载选项
     if (selectedOption == 0) {
       renderer.fillRect(0, optionY - 2, pageWidth - 1, optionHeight);
-      renderer.drawText(UI_10_FONT_ID, 20, optionY, "← 下载云端进度", false);
+      renderer.drawText(UI_10_FONT_ID, 20, optionY, "← 下載雲端進度", false);
     } else {
-      renderer.drawText(UI_10_FONT_ID, 20, optionY, "  下载云端进度", true);
+      renderer.drawText(UI_10_FONT_ID, 20, optionY, "  下載雲端進度", true);
     }
 
     // 上传选项
     if (selectedOption == 1) {
       renderer.fillRect(0, optionY + optionHeight - 2, pageWidth - 1, optionHeight);
-      renderer.drawText(UI_10_FONT_ID, 20, optionY + optionHeight, "→ 上传本地进度", false);
+      renderer.drawText(UI_10_FONT_ID, 20, optionY + optionHeight, "→ 上傳本地進度", false);
     } else {
-      renderer.drawText(UI_10_FONT_ID, 20, optionY + optionHeight, "  上传本地进度", true);
+      renderer.drawText(UI_10_FONT_ID, 20, optionY + optionHeight, "  上傳本地進度", true);
     }
 
-    const auto labels = mappedInput.mapLabels("返回", "选择", "左", "右");
+    const auto labels = mappedInput.mapLabels("返回", "選擇", "左", "右");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
@@ -290,21 +290,21 @@ void JianGuoSyncActivity::render() const {
   if (state == BrowserState::COMPLETE) {
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, "✓ 同步完成");
     char infoBuf[64];
-    snprintf(infoBuf, sizeof(infoBuf), "章节：%d", lastExtractedChapterIndex);
+    snprintf(infoBuf, sizeof(infoBuf), "章節：%d", lastExtractedChapterIndex);
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, infoBuf);
     if (!lastExtractedBookName.empty()) {
         renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 25, lastExtractedBookName.c_str());
     }
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 30, "按返回键退出");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 30, "按返回鍵退出");
     renderer.displayBuffer();
     return;
   }
 
   // 错误
   if (state == BrowserState::ERROR) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "✗ 失败");
+    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, "✗ 失敗");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, errorMessage.c_str());
-    const auto labels = mappedInput.mapLabels("返回", "重试", "", "");
+    const auto labels = mappedInput.mapLabels("返回", "重試", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
@@ -316,7 +316,7 @@ void JianGuoSyncActivity::render() const {
 void JianGuoSyncActivity::checkAndConnectWifi() {
   if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
     state = BrowserState::DOWNLOADING;
-    statusMessage = "准备下载...";
+    statusMessage = "準備下載...";
     updateRequired = true;
     downloadProgressFile();
     return;
@@ -338,17 +338,17 @@ void JianGuoSyncActivity::launchWifiSelection() {
 void JianGuoSyncActivity::onWifiSelectionComplete(const bool connected) {
   exitActivity();
   if (connected) {
-    Serial.printf("[%lu] [JG] WiFi已连接，开始下载进度文件\n", millis());
+    Serial.printf("[%lu] [JG] WiFi已連線，開始下載進度檔案\n", millis());
     state = BrowserState::DOWNLOADING;
-    statusMessage = "准备下载...";
+    statusMessage = "準備下載...";
     updateRequired = true;
     downloadProgressFile();
   } else {
-    Serial.printf("[%lu] [JG] WiFi连接失败\n", millis());
+    Serial.printf("[%lu] [JG] WiFi連線失敗\n", millis());
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
     state = BrowserState::ERROR;
-    errorMessage = "WiFi连接失败";
+    errorMessage = "WiFi連線失敗";
     updateRequired = true;
   }
 }
@@ -360,16 +360,16 @@ void JianGuoSyncActivity::downloadProgressFile() {
     
     if (username.empty() || appPwd.empty()) {
         state = BrowserState::ERROR;
-        errorMessage = "请配置坚果云账号/应用密码";
+        errorMessage = "請配置堅果雲賬號/應用密碼";
         updateRequired = true;
         return;
     }
 
     // 目标文件路径（相对路径）
     // 目标书名
-    //debug std::string targetName = "十万个氪金的理由";  // ← 可改为参数传入
+    //debug std::string targetName = "十萬個氪金的理由";  // ← 可改为参数传入
     std::string targetName = epub->getTitle();
-    Serial.printf("[JG] 标题为：%s\n", targetName.c_str());
+    Serial.printf("[JG] 標題為：%s\n", targetName.c_str());
     std::string matchedFileName = "";
 
     // === PROPFIND 列目录查找文件 ===
@@ -382,7 +382,7 @@ void JianGuoSyncActivity::downloadProgressFile() {
 
     if (!client.connect("dav.jianguoyun.com", 443)) {
         state = BrowserState::ERROR;
-        errorMessage = "连接坚果云失败";
+        errorMessage = "連線堅果雲失敗";
         updateRequired = true;
         return;
     }
@@ -423,7 +423,7 @@ void JianGuoSyncActivity::downloadProgressFile() {
         String fileName = response.substring(nameStart, nameEnd);
         xmlPos = nameEnd;
         
-        Serial.printf("[JG] 找到文件：%s\n", fileName.c_str());
+        Serial.printf("[JG] 找到檔案：%s\n", fileName.c_str());
         
         // 匹配：以 targetName 开头 且 以 .json 结尾
         // 匹配成功后
@@ -436,14 +436,14 @@ void JianGuoSyncActivity::downloadProgressFile() {
             this->matchedFileUrl = "https://dav.jianguoyun.com/dav/" + urlEncode(remotePath);
             
             Serial.printf("[JG] 匹配成功：%s\n", matchedFileName.c_str());
-            Serial.printf("[JG] 保存 URL: %s\n", this->matchedFileUrl.c_str());
+            Serial.printf("[JG] 儲存 URL: %s\n", this->matchedFileUrl.c_str());
             break;
         }
     }
 
     if (matchedFileName.empty()) {
         state = BrowserState::ERROR;
-        errorMessage = "未找到进度文件";
+        errorMessage = "未找到進度檔案";
         updateRequired = true;
         return;
     }
@@ -461,10 +461,10 @@ void JianGuoSyncActivity::downloadProgressFile() {
     // 本地临时文件路径
     std::string localPath = "/temp.json";
 
-    Serial.printf("[%lu] [JG] 下载进度文件\n", millis());
+    Serial.printf("[%lu] [JG] 下載進度檔案\n", millis());
     Serial.printf("[JG] URL: %s\n", downloadUrl.c_str());
-    Serial.printf("[JG] 用户: %s\n", username.c_str());
-    statusMessage = "正在下载...";
+    Serial.printf("[JG] 使用者: %s\n", username.c_str());
+    statusMessage = "正在下載...";
     updateRequired = true;
 
     // 执行下载（需要传递认证信息）
@@ -479,7 +479,7 @@ void JianGuoSyncActivity::downloadProgressFile() {
     );
 
     if (result == HttpDownloader::OK) {
-        Serial.printf("[%lu] [JG] 下载完成，开始解析...\n", millis());
+        Serial.printf("[%lu] [JG] 下載完成，開始解析...\n", millis());
         statusMessage = "解析中...";
         updateRequired = true;
         parseAndCleanup();
@@ -487,9 +487,9 @@ void JianGuoSyncActivity::downloadProgressFile() {
         state = BrowserState::ERROR;
         char codeStr[16];
         snprintf(codeStr, sizeof(codeStr), "HTTP %d", (int)result);
-        errorMessage = "下载失败: ";
+        errorMessage = "下載失敗: ";
         errorMessage += codeStr;
-        Serial.printf("[%lu] [JG] 下载失败: %d\n", millis(), (int)result);
+        Serial.printf("[%lu] [JG] 下載失敗: %d\n", millis(), (int)result);
         updateRequired = true;
     }
 }
@@ -500,7 +500,7 @@ void JianGuoSyncActivity::parseAndCleanup() {
     FsFile tempFile;
     if (!SdMan.openFileForRead("JGsys", "/temp.json", tempFile)) {
         state = BrowserState::ERROR;
-        errorMessage = "无法打开临时文件";
+        errorMessage = "無法開啟臨時檔案";
         updateRequired = true;
         return;
     }
@@ -557,8 +557,8 @@ void JianGuoSyncActivity::parseAndCleanup() {
       }
   }
 
-  Serial.printf("[JG] 云端章节标题：%s\n", durChapterTitle.c_str());
-  Serial.printf("[JG] 初始章节索引：%d\n", chapterIndex);
+  Serial.printf("[JG] 雲端章節標題：%s\n", durChapterTitle.c_str());
+  Serial.printf("[JG] 初始章節索引：%d\n", chapterIndex);
 
  // === 通过标题匹配校准章节索引（新增差值记录）===
 if (!durChapterTitle.isEmpty() && chapterIndex >= 0) {
@@ -579,7 +579,7 @@ if (!durChapterTitle.isEmpty() && chapterIndex >= 0) {
                 matchOffset = offset;  // 记录+偏移值
                 chapterIndex = chapterIndex + offset;
                 found = true;
-                Serial.printf("[JG] 标题匹配成功（+%d）：原始索引%d → 匹配索引%d，差值：+%d\n", 
+                Serial.printf("[JG] 標題匹配成功（+%d）：原始索引%d → 匹配索引%d，差值：+%d\n", 
                              offset, originalChapterIndex, chapterIndex, matchOffset);
                 break;
             }
@@ -591,7 +591,7 @@ if (!durChapterTitle.isEmpty() && chapterIndex >= 0) {
                 matchOffset = -offset; // 记录-偏移值
                 chapterIndex = chapterIndex - offset;
                 found = true;
-                Serial.printf("[JG] 标题匹配成功（-%d）：原始索引%d → 匹配索引%d，差值：%d\n", 
+                Serial.printf("[JG] 標題匹配成功（-%d）：原始索引%d → 匹配索引%d，差值：%d\n", 
                              offset, originalChapterIndex, chapterIndex, matchOffset);
                 break;
             }
@@ -600,14 +600,14 @@ if (!durChapterTitle.isEmpty() && chapterIndex >= 0) {
     
     // 如果附近没找到，遍历整个目录
     if (!found) {
-        Serial.printf("[JG] 附近未找到，遍历整个目录...\n");
+        Serial.printf("[JG] 附近未找到，遍歷整個目錄...\n");
         for (int i = 0; i < tocCount; i++) {
             String localTitle = epub->getTocItem(i).title.c_str();
             if (localTitle == durChapterTitle) {
                 matchOffset = i - originalChapterIndex; // 计算遍历匹配的差值
                 chapterIndex = i;
                 found = true;
-                Serial.printf("[JG] 标题匹配成功（遍历）：原始索引%d → 匹配索引%d，差值：%d\n", 
+                Serial.printf("[JG] 標題匹配成功（遍歷）：原始索引%d → 匹配索引%d，差值：%d\n", 
                              originalChapterIndex, chapterIndex, matchOffset);
                 break;
             }
@@ -616,17 +616,17 @@ if (!durChapterTitle.isEmpty() && chapterIndex >= 0) {
     
     if (!found) {
         matchOffset = 0; // 未匹配到，差值为0
-        Serial.printf("[JG] 警告：未找到匹配的章节标题，使用原始索引：%d，差值：%d\n", 
+        Serial.printf("[JG] 警告：未找到匹配的章節標題，使用原始索引：%d，差值：%d\n", 
                      chapterIndex, matchOffset);
     } else {
         // 新增：全局记录匹配差值（可根据需要保存到类成员变量）
-        Serial.printf("[JG] 【最终差值记录】原始索引%d → 匹配索引%d，偏移差值：%d\n", 
+        Serial.printf("[JG] 【最終差值記錄】原始索引%d → 匹配索引%d，偏移差值：%d\n", 
                      originalChapterIndex, chapterIndex, matchOffset);
     }
 } else {
-    Serial.printf("[JG] 跳过标题匹配（标题为空或索引无效）\n");
+    Serial.printf("[JG] 跳過標題匹配（標題為空或索引無效）\n");
 }
-  Serial.printf("[JG] 最终章节索引：%d\n", chapterIndex);
+  Serial.printf("[JG] 最終章節索引：%d\n", chapterIndex);
     // === 删除临时文件 ===
     SdMan.remove("/temp.json");
 
@@ -635,7 +635,7 @@ if (!durChapterTitle.isEmpty() && chapterIndex >= 0) {
     lastExtractedBookName = bookName.c_str();
     lastExtractedChapterTitle = durChapterTitle.c_str();
 
-    Serial.printf("[PROGRESS] 章节索引：%d, 书名：%s, 章节标题：%s\n", chapterIndex, bookName.c_str(), durChapterTitle.c_str());
+    Serial.printf("[PROGRESS] 章節索引：%d, 書名：%s, 章節標題：%s\n", chapterIndex, bookName.c_str(), durChapterTitle.c_str());
 
     // === 显示选项界面（而不是直接完成）===
     state = BrowserState::SHOWING_RESULT;
@@ -650,17 +650,17 @@ void JianGuoSyncActivity::uploadProgressFile() {
     
     if (username.empty() || appPwd.empty()) {
         state = BrowserState::ERROR;
-        errorMessage = "请配置坚果云账号/应用密码";
+        errorMessage = "請配置堅果雲賬號/應用密碼";
         updateRequired = true;
         return;
     }
 
-    Serial.printf("[JG] 上传文件名：%s\n", this->matchedFileName.c_str());
-    Serial.printf("[JG] 上传 URL: %s\n", this->matchedFileUrl.c_str());  // ⬇️ 使用保存的 URL
+    Serial.printf("[JG] 上傳檔名：%s\n", this->matchedFileName.c_str());
+    Serial.printf("[JG] 上傳 URL: %s\n", this->matchedFileUrl.c_str());  // ⬇️ 使用保存的 URL
     
     if (this->matchedFileUrl.empty()) {
         state = BrowserState::ERROR;
-        errorMessage = "文件 URL 为空";
+        errorMessage = "檔案 URL 為空";
         updateRequired = true;
         return;
     }
@@ -668,7 +668,7 @@ void JianGuoSyncActivity::uploadProgressFile() {
     // 重新下载文件
     std::string localPath = "/temp_upload.json";
 
-    Serial.printf("[%lu] [JG] 重新下载文件用于修改...\n", millis());
+    Serial.printf("[%lu] [JG] 重新下載檔案用於修改...\n", millis());
     
     const auto downloadResult = HttpDownloader::downloadToFile_jg(
         this->matchedFileUrl.c_str(),  // ⬇️ 使用保存的 URL
@@ -680,7 +680,7 @@ void JianGuoSyncActivity::uploadProgressFile() {
         state = BrowserState::ERROR;
         char codeStr[16];
         snprintf(codeStr, sizeof(codeStr), "HTTP %d", (int)downloadResult);
-        errorMessage = "下载文件失败：";
+        errorMessage = "下載檔案失敗：";
         errorMessage += codeStr;
         updateRequired = true;
         return;
@@ -690,7 +690,7 @@ void JianGuoSyncActivity::uploadProgressFile() {
     FsFile tempFile;
     if (!SdMan.openFileForRead("JGsys", "/temp_upload.json", tempFile)) {
         state = BrowserState::ERROR;
-        errorMessage = "无法打开临时文件";
+        errorMessage = "無法開啟臨時檔案";
         updateRequired = true;
         return;
     }
@@ -776,15 +776,15 @@ void JianGuoSyncActivity::uploadProgressFile() {
     FsFile writeFile;
     if (!SdMan.openFileForWrite("JGsys", "/temp_upload.json", writeFile)) {
         state = BrowserState::ERROR;
-        errorMessage = "无法写入临时文件";
+        errorMessage = "無法寫入臨時檔案";
         updateRequired = true;
         return;
     }
     writeFile.write((const uint8_t*)jsonContent.c_str(), jsonContent.length());
     writeFile.close();
 
-    Serial.printf("[%lu] [JG] JSON 修改完成，准备上传...\n", millis());
-    Serial.printf("[JG] JSON 长度：%d\n", jsonContent.length());
+    Serial.printf("[%lu] [JG] JSON 修改完成，準備上傳...\n", millis());
+    Serial.printf("[JG] JSON 長度：%d\n", jsonContent.length());
 
     // === 使用 WiFiClientSecure 手动 PUT（和下载保持一致）===
     WiFiClientSecure client;
@@ -796,7 +796,7 @@ void JianGuoSyncActivity::uploadProgressFile() {
 
     if (!client.connect("dav.jianguoyun.com", 443)) {
         state = BrowserState::ERROR;
-        errorMessage = "连接坚果云失败";
+        errorMessage = "連線堅果雲失敗";
         updateRequired = true;
         return;
     }
@@ -807,7 +807,7 @@ void JianGuoSyncActivity::uploadProgressFile() {
     if (pathStart == -1) pathStart = 0;
     String path = urlPath.substring(pathStart);
 
-    Serial.printf("[JG] PUT 路径：%s\n", path.c_str());
+    Serial.printf("[JG] PUT 路徑：%s\n", path.c_str());
 
     // 发送 PUT 请求
     client.print("PUT ");
@@ -840,19 +840,19 @@ void JianGuoSyncActivity::uploadProgressFile() {
     client.stop();
     SdMan.remove("/temp_upload.json");
 
-    Serial.printf("[JG] HTTP 响应码：%d\n", httpCode);
+    Serial.printf("[JG] HTTP 響應碼：%d\n", httpCode);
 
     if (httpCode == 200 || httpCode == 201 || httpCode == 204) {
-        Serial.printf("[%lu] [JG] ✓ 上传成功！\n", millis());
-        Serial.printf("[JG] 章节：%d → %d\n", oldChapterIndex, currentSpineIndex);
+        Serial.printf("[%lu] [JG] ✓ 上傳成功！\n", millis());
+        Serial.printf("[JG] 章節：%d → %d\n", oldChapterIndex, currentSpineIndex);
         state = BrowserState::COMPLETE;
         updateRequired = true;
     } else {
-        Serial.printf("[%lu] [JG] ✗ 上传失败，HTTP 码：%d\n", millis(), httpCode);
+        Serial.printf("[%lu] [JG] ✗ 上傳失敗，HTTP 碼：%d\n", millis(), httpCode);
         state = BrowserState::ERROR;
         char codeStr[16];
         snprintf(codeStr, sizeof(codeStr), "HTTP %d", httpCode);
-        errorMessage = "上传失败：";
+        errorMessage = "上傳失敗：";
         errorMessage += codeStr;
         updateRequired = true;
     }

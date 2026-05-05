@@ -191,15 +191,15 @@ void KOReaderSettingsActivity::render() {
     // Draw status for each item
     const char* status = "";
     if (i == 0) {
-      status = KOREADER_STORE.getUsername().empty() ? "[未设置]" : "[已设置]";
+      status = KOREADER_STORE.getUsername().empty() ? "[未設定]" : "[已設定]";
     } else if (i == 1) {
-      status = KOREADER_STORE.getPassword().empty() ? "[未设置]" : "[已设置]";
+      status = KOREADER_STORE.getPassword().empty() ? "[未設定]" : "[已設定]";
     } else if (i == 2) {
-      status = KOREADER_STORE.getServerUrl().empty() ? "[默认]" : "[自定义]";
+      status = KOREADER_STORE.getServerUrl().empty() ? "[預設]" : "[自定義]";
     } else if (i == 3) {
       status = KOREADER_STORE.getMatchMethod() == DocumentMatchMethod::FILENAME ? "[Filename]" : "[Binary]";
     } else if (i == 4) {
-      status = KOREADER_STORE.hasCredentials() ? "" : "[请先设置凭据]";
+      status = KOREADER_STORE.hasCredentials() ? "" : "[請先設定憑據]";
     }
 
     const auto width = renderer.getTextWidth(UI_10_FONT_ID, status);
@@ -207,7 +207,7 @@ void KOReaderSettingsActivity::render() {
   }
 
   // Draw button hints
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "", "");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();

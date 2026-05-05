@@ -295,7 +295,7 @@ void TxtReaderActivity::chapter_initializeReader(int chapter_num) {
     }
     //加个判断防止解析全书
     if (chapterOffsetend - chapterOffsetbegin > 100000) {
-    Serial.printf("[%lu] [TRS] 章节读取失败，确认键进入目录重选\n", 
+    Serial.printf("[%lu] [TRS] 章節讀取失敗，確認鍵進入目錄重選\n", 
                   millis());
     return;
    }
@@ -465,7 +465,7 @@ bool TxtReaderActivity::loadPageAtOffset(size_t offset,size_t endOffset, std::ve
       switch (cachedParagraphAlignment) {
         case CrossPointSettings::LEFT_ALIGN:
         lineWidth = lineWidth+wordSpacing;
-        //Serial.printf("左对齐字间距生效：wordSpacing=%d\n", wordSpacing);
+        //Serial.printf("左對齊字間距生效：wordSpacing=%d\n", wordSpacing);
       }
 
       if (lineWidth <= viewportWidth) {

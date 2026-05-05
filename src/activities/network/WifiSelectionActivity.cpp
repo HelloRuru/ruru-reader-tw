@@ -598,7 +598,7 @@ void WifiSelectionActivity::renderNetworkList() const {
 
   // Draw help text
   renderer.drawText(SMALL_FONT_ID, 20, pageHeight - 75, "* = Encrypted | + = Saved");
-  const auto labels = mappedInput.mapLabels("« 返回", "连接", "", "");
+  const auto labels = mappedInput.mapLabels("« 返回", "連線", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
@@ -679,7 +679,7 @@ void WifiSelectionActivity::renderSavePrompt() const {
   }
 
   // Use centralized button hints
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "向左", "向右");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "向左", "向右");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
@@ -688,11 +688,11 @@ void WifiSelectionActivity::renderConnectionFailed() const {
   const auto height = renderer.getLineHeight(UI_10_FONT_ID);
   const auto top = (pageHeight - height * 2) / 2;
 
-  renderer.drawCenteredText(UI_12_FONT_ID, top - 20, "连接失败", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_12_FONT_ID, top - 20, "連線失敗", true, EpdFontFamily::BOLD);
   renderer.drawCenteredText(UI_10_FONT_ID, top + 20, connectionError.c_str());
 
   // Use centralized button hints
-  const auto labels = mappedInput.mapLabels("« 返回", "继续", "", "");
+  const auto labels = mappedInput.mapLabels("« 返回", "繼續", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
@@ -734,6 +734,6 @@ void WifiSelectionActivity::renderForgetPrompt() const {
   }
 
   // Use centralized button hints
-  const auto labels = mappedInput.mapLabels("« 返回", "选择", "向左", "向右");
+  const auto labels = mappedInput.mapLabels("« 返回", "選擇", "向左", "向右");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
