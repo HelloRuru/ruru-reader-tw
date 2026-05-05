@@ -35,7 +35,9 @@ void BluetoothSettingsActivity::onEnter() {
   try {
     btMgr = &BluetoothHIDManager::getInstance();
     Serial.printf("BT BluetoothHIDManager ready");
-    
+    // [stage9.1] 進入藍芽設定 UI，暫停 auto-reconnect 避免卡住 UI
+    btMgr->setUiBluetoothActive(true);
+
     // Restore Bluetooth persistent state on entry
     if (SETTINGS.bluetoothEnabled && !btMgr->isEnabled()) {
       Serial.printf("BT Restoring Bluetooth from settings (enabled)");
@@ -87,6 +89,11 @@ void BluetoothSettingsActivity::onExit() {
   // Stop any ongoing scan
   if (btMgr && btMgr->isScanning()) {
     btMgr->stopScan();
+  }
+
+  // [stage9.1] 離開藍芽設定 UI，恢復 auto-reconnect
+  if (btMgr) {
+    btMgr->setUiBluetoothActive(false);
   }
 }
 

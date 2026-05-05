@@ -49,6 +49,11 @@ public:
   void stopScan();
   bool isScanning() const { return _scanning; }
   void _setScanningFinished() { _scanning = false; }  // 給 ScanCallbacks::onScanEnd 用
+
+  // [stage9.1] UI 操作中標記 — 進藍芽設定頁時 set true，離開 set false
+  // 用於暫停 auto-reconnect，避免使用者要連新裝置時 reader 卻在嘗試連舊裝置而卡住 UI
+  void setUiBluetoothActive(bool active) { _uiBluetoothActive = active; }
+  bool isUiBluetoothActive() const { return _uiBluetoothActive; }
   const std::vector<BluetoothDevice>& getDiscoveredDevices() const { return _discoveredDevices; }
 
   // Connection
@@ -114,4 +119,5 @@ private:
   static constexpr unsigned long INACTIVITY_TIMEOUT_MS = 120000;  // 2 minutes
   unsigned long lastMaintenanceCheck = 0;
   unsigned long _manualDisconnectSuppressUntil = 0;
+  bool _uiBluetoothActive = false;  // [stage9.1] 使用者在藍芽設定 UI 中時為 true，期間暫停 auto-reconnect
 };

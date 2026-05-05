@@ -315,7 +315,8 @@ bool CrossPointSettings::loadFromFile() {
   }
 
   inputFile.close();
-  bluetoothEnabled = 0;//先默认蓝牙关闭
+  // [stage9.1] 移除強制關藍芽 — 上游 ChineseType 因藍芽會 crash 故每次開機關掉，
+  // stage7 修好藍芽後讓 bluetoothEnabled 沿用上次狀態（記住使用者選擇）
   Serial.printf("[%lu] [CPS] Settings loaded from file\n", millis());
   return true;
 }

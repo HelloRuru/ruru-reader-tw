@@ -857,6 +857,12 @@ void BluetoothHIDManager::checkAutoReconnect() {
     return;
   }
 
+  // [stage9.1] 使用者在藍芽設定 UI 操作中時，暫停 auto-reconnect
+  // 避免使用者要連新裝置時 reader 卻在嘗試 connectToDeviceWithRetries 連舊裝置（30s timeout）而卡住 UI
+  if (_uiBluetoothActive) {
+    return;
+  }
+
   // Check for devices that were previously connected but are now disconnected
   // Attempt to reconnect to them automatically
   static unsigned long lastReconnectCheck = 0;
