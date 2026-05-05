@@ -3,6 +3,7 @@
 #include <FsHelpers.h>
 #include <HardwareSerial.h>
 #include <JpegToBmpConverter.h>
+#include <PngToBmpConverter.h>
 #include <SDCardManager.h>
 #include <ZipFile.h>
 
@@ -580,14 +581,45 @@ bool Epub::generateThumbBmp(int height) const {
     Serial.printf("[%lu] [EBP] Generated thumb BMP from JPG cover image, success: %s\n", millis(),
                   success ? "yes" : "no");
     return success;
+  } else if (coverImageHref.length() >= 4 &&
+             coverImageHref.substr(coverImageHref.length() - 4) == ".png") {
+    // 新增 PNG cover 支援（ChineseType base 原本只支援 JPG）
+    Serial.printf("[%lu] [EBP] Generating thumb BMP from PNG cover image\n", millis());
+    const auto coverPngTempPath = getCachePath() + "/.cover.png";
+
+    FsFile coverPng;
+    if (!SdMan.openFileForWrite("EBP", coverPngTempPath, coverPng)) {
+      return false;
+    }
+    readItemContentsToStream(coverImageHref, coverPng, 1024);
+    coverPng.close();
+
+    FsFile thumbBmp;
+    if (!SdMan.openFileForWrite("EBP", getThumbBmpPath(height), thumbBmp)) {
+      SdMan.remove(coverPngTempPath.c_str());
+      return false;
+    }
+    int THUMB_TARGET_WIDTH = static_cast<int>(height * 0.6);
+    int THUMB_TARGET_HEIGHT = height;
+    const bool success = PngToBmpConverter::pngFilenameTo1BitBmpStreamWithSize(
+        coverPngTempPath.c_str(), thumbBmp, THUMB_TARGET_WIDTH, THUMB_TARGET_HEIGHT);
+    thumbBmp.close();
+    SdMan.remove(coverPngTempPath.c_str());
+
+    if (!success) {
+      Serial.printf("[%lu] [EBP] Failed to generate thumb BMP from PNG cover image\n", millis());
+      SdMan.remove(getThumbBmpPath(height).c_str());
+    }
+    Serial.printf("[%lu] [EBP] Generated thumb BMP from PNG cover image, success: %s\n", millis(),
+                  success ? "yes" : "no");
+    return success;
   } else {
-    Serial.printf("[%lu] [EBP] Cover image is not a JPG, skipping thumbnail\n", millis());
+    Serial.printf("[%lu] [EBP] Cover image format unsupported (not JPG/PNG), skipping thumbnail\n", millis());
   }
 
-  // Write an empty bmp file to avoid generation attempts in the future
-  FsFile thumbBmp;
-  SdMan.openFileForWrite("EBP", getThumbBmpPath(height), thumbBmp);
-  thumbBmp.close();
+  // 修正 ChineseType base bug：原邏輯會寫空 BMP 當佔位符，
+  // 但空檔沒表頭，下次讀取會 parseHeaders 拿到隨機 width/height、然後 readNextRow short read。
+  // 改為：失敗就不寫檔，呼叫端自己判斷 path empty 或 file not exist 來避開渲染。
   return false;
 }
 
