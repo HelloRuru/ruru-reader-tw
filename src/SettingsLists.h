@@ -26,7 +26,7 @@ inline std::vector<SettingInfo> getSettingsList() {
                       "hideBatteryPercentage", "Display"),
     SettingInfo::Enum("刷新频率", &CrossPointSettings::refreshFrequency,
                       {"1 page", "5 pages", "10 pages", "15 pages", "30 pages"},"refreshFrequency","Display"),
-    SettingInfo::Enum("UI 主题", &CrossPointSettings::uiTheme, {"经典", "Lyra", "Flow 轮播"},"UI Theme","Display"),
+    SettingInfo::Enum("UI 主题", &CrossPointSettings::uiTheme, {"经典", "Lyra", "Flow 轮播", "三封面", "圆角"},"UI Theme","Display"),
     SettingInfo::Toggle("抗阳光褪色", &CrossPointSettings::fadingFix,"Sunlight Fading Compensation","Display"),
 
       // --- Reader ---

@@ -102,6 +102,9 @@ class GfxRenderer {
   void drawBitmap1Bit(const Bitmap& bitmap, int x, int y, int maxWidth, int maxHeight) const;
   // 透視梯形繪圖（Flow theme 輪播用）— 從 Carousel 移植
   void drawPerspectiveBitmap(const Bitmap& bitmap, int x, int y, int w, int hL, int hR) const;
+  // 圓角矩形外角遮罩（RoundedRaff theme 用）— 從 Carousel 移植
+  void maskRoundedRectOutsideCorners(int x, int y, int width, int height, int radius,
+                                     Color color = Color::White) const;
   void fillPolygon(const int* xPoints, const int* yPoints, int numPoints, bool state = true) const;
 
   // Text

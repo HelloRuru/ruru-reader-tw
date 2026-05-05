@@ -8,6 +8,8 @@
 #include "components/themes/BaseTheme.h"
 #include "components/themes/lyra/LyraTheme.h"
 #include "components/themes/lyra/LyraFlowTheme.h"
+#include "components/themes/lyra/Lyra3CoversTheme.h"
+#include "components/themes/roundedraff/RoundedRaffTheme.h"
 
 UITheme UITheme::instance;
 
@@ -37,6 +39,16 @@ void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
       Serial.printf("[%lu] [UI] Using Lyra Flow theme (carousel)\n", millis());
       currentTheme = new LyraFlowTheme();
       currentMetrics = &LyraFlowMetrics::values;
+      break;
+    case CrossPointSettings::UI_THEME::LYRA_3COVERS:
+      Serial.printf("[%lu] [UI] Using Lyra 3Covers theme\n", millis());
+      currentTheme = new Lyra3CoversTheme();
+      currentMetrics = &Lyra3CoversMetrics::values;
+      break;
+    case CrossPointSettings::UI_THEME::ROUNDEDRAFF:
+      Serial.printf("[%lu] [UI] Using RoundedRaff theme\n", millis());
+      currentTheme = new RoundedRaffTheme();
+      currentMetrics = &RoundedRaffMetrics::values;
       break;
   }
 }

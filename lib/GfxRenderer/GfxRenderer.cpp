@@ -1165,6 +1165,43 @@ void GfxRenderer::drawPngFromTxtpng(const char* txtpng_file_path) const {
     Serial.printf("[%lu] [GFX] Png draw completed (mode: %d)\n", millis(), renderMode);
 }
 
+// 圓角矩形外角遮罩（RoundedRaff theme 用）— 從 Carousel 移植
+// 把矩形的 4 個外角（圓弧外的部分）填成 color，讓書封呈現圓角
+void GfxRenderer::maskRoundedRectOutsideCorners(const int x, const int y, const int width, const int height,
+                                                const int radius, const Color color) const {
+  if (radius <= 0 || color == Color::Clear) {
+    return;
+  }
+
+  const int rr = radius - 1;
+  const int rr2 = rr * rr;
+  for (int dy = 0; dy < radius; dy++) {
+    for (int dx = 0; dx < radius; dx++) {
+      const int tx = rr - dx;
+      const int ty = rr - dy;
+      if (tx * tx + ty * ty > rr2) {
+        if (color == Color::White || color == Color::Black) {
+          bool state = color == Color::Black;
+          drawPixel(x + dx, y + dy, state);
+          drawPixel(x + width - 1 - dx, y + dy, state);
+          drawPixel(x + dx, y + height - 1 - dy, state);
+          drawPixel(x + width - 1 - dx, y + height - 1 - dy, state);
+        } else if (color == Color::LightGray) {
+          drawPixelDither<Color::LightGray>(x + dx, y + dy);
+          drawPixelDither<Color::LightGray>(x + width - 1 - dx, y + dy);
+          drawPixelDither<Color::LightGray>(x + dx, y + height - 1 - dy);
+          drawPixelDither<Color::LightGray>(x + width - 1 - dx, y + height - 1 - dy);
+        } else if (color == Color::DarkGray) {
+          drawPixelDither<Color::DarkGray>(x + dx, y + dy);
+          drawPixelDither<Color::DarkGray>(x + width - 1 - dx, y + dy);
+          drawPixelDither<Color::DarkGray>(x + dx, y + height - 1 - dy);
+          drawPixelDither<Color::DarkGray>(x + width - 1 - dx, y + height - 1 - dy);
+        }
+      }
+    }
+  }
+}
+
 // 透視梯形繪圖（Flow theme 輪播用）— 從 Carousel 移植，砍掉 fontCacheManager_ 檢查
 void GfxRenderer::drawPerspectiveBitmap(const Bitmap& bitmap, const int x, const int y, const int w, const int hL,
                                         const int hR) const {
