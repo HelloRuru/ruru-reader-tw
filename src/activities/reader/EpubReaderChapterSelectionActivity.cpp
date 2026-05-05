@@ -67,6 +67,10 @@ void EpubReaderChapterSelectionActivity::onEnter() {
     return;
   }
 
+  if (epub->isLargeBookMode()) {
+    epub->ensureTocLoaded();
+  }
+
   renderingMutex = xSemaphoreCreateMutex();
 
   if (epub->getTocItemsCount() > 0) {

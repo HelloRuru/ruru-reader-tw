@@ -83,6 +83,7 @@ public:
   std::string lastError;
   //防止崩溃，让外部可读取信息
   void onScanResult(NimBLEAdvertisedDevice* advertisedDevice);
+  void onClientDisconnected(const std::string& address);
 
 private:
 
@@ -100,6 +101,7 @@ private:
   uint16_t parseHIDReport(uint8_t* data, size_t length);
   ConnectedDevice* findConnectedDevice(const std::string& address);
   uint8_t mapKeycodeToButton(uint8_t keycode, const DeviceProfiles::DeviceProfile* profile);
+  void pruneDisconnectedDevices(bool logDetails = false);
 
   bool _enabled = false;
   bool _scanning = false;
@@ -111,4 +113,5 @@ private:
   // Inactivity timeout (milliseconds)
   static constexpr unsigned long INACTIVITY_TIMEOUT_MS = 120000;  // 2 minutes
   unsigned long lastMaintenanceCheck = 0;
+  unsigned long _manualDisconnectSuppressUntil = 0;
 };

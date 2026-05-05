@@ -14,6 +14,7 @@
 
 namespace {
 constexpr bool kDisableEpubCss = true;
+constexpr int kLargeBookSpineThreshold = 500;
 }
 
 bool Epub::findContentOpfFile(std::string* contentOpfFile) const {
@@ -297,6 +298,7 @@ bool Epub::load(const bool buildIfMissing, const bool skipLoadingCss) {
 
   // Try to load existing cache first
   if (bookMetadataCache->load()) {
+    largeBookMode = (bookMetadataCache->getSpineCount() > kLargeBookSpineThreshold);
     if (!effectiveSkipLoadingCss && !loadCssRulesFromCache()) {
       Serial.printf("[%lu] [EBP] Warning: CSS rules cache not found, attempting to parse CSS files\n", millis());
       // to get CSS file list
@@ -348,11 +350,10 @@ bool Epub::load(const bool buildIfMissing, const bool skipLoadingCss) {
   // 觸發條件：spine > 500（網文常見幾千章）
   // 大書模式跳過 TOC pass，避免首次開書卡 30+ 秒解析 ncx/nav（往往 100KB+ XML）
   // TOC 改成「進入章節目錄頁時才解析」（lazy load）
-  constexpr int LARGE_BOOK_SPINE_THRESHOLD = 500;
-  largeBookMode = (bookMetadataCache->getSpineCount() > LARGE_BOOK_SPINE_THRESHOLD);
+  largeBookMode = (bookMetadataCache->getSpineCount() > kLargeBookSpineThreshold);
   if (largeBookMode) {
     Serial.printf("[%lu] [EBP] LARGE BOOK MODE (spine=%d > %d): skipping TOC pass, using rough progress\n",
-                  millis(), bookMetadataCache->getSpineCount(), LARGE_BOOK_SPINE_THRESHOLD);
+                  millis(), bookMetadataCache->getSpineCount(), kLargeBookSpineThreshold);
   }
 
   // TOC Pass - try EPUB 3 nav first, fall back to NCX
@@ -416,6 +417,7 @@ bool Epub::load(const bool buildIfMissing, const bool skipLoadingCss) {
     Serial.printf("[%lu] [EBP] Failed to reload cache after writing\n", millis());
     return false;
   }
+  largeBookMode = (bookMetadataCache->getSpineCount() > kLargeBookSpineThreshold);
 
   if (!effectiveSkipLoadingCss) {
     // Parse CSS files after cache reload
@@ -423,6 +425,97 @@ bool Epub::load(const bool buildIfMissing, const bool skipLoadingCss) {
   }
 
   Serial.printf("[%lu] [EBP] Loaded ePub: %s\n", millis(), filepath.c_str());
+  return true;
+}
+
+bool Epub::ensureTocLoaded() {
+  if (!bookMetadataCache || !bookMetadataCache->isLoaded()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded called before cache load\n", millis());
+    return false;
+  }
+
+  if (bookMetadataCache->getTocCount() > 0) {
+    return true;
+  }
+
+  if (bookMetadataCache->getSpineCount() <= kLargeBookSpineThreshold) {
+    return true;
+  }
+
+  Serial.printf("[%lu] [EBP] Lazy-loading TOC for large book: %s\n", millis(), filepath.c_str());
+
+  setupCacheDir();
+  bookMetadataCache.reset(new BookMetadataCache(cachePath));
+
+  BookMetadataCache::BookMetadata bookMetadata;
+
+  if (!bookMetadataCache->beginWrite()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not begin writing cache\n", millis());
+    return false;
+  }
+
+  if (!bookMetadataCache->beginContentOpfPass()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not begin content.opf pass\n", millis());
+    return false;
+  }
+
+  if (!parseContentOpf(bookMetadata)) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not parse content.opf\n", millis());
+    return false;
+  }
+
+  if (!bookMetadataCache->endContentOpfPass()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not end content.opf pass\n", millis());
+    return false;
+  }
+
+  if (!bookMetadataCache->beginTocPass()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not begin TOC pass\n", millis());
+    return false;
+  }
+
+  bool tocParsed = false;
+  if (!tocNavItem.empty()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: parsing EPUB 3 nav document\n", millis());
+    tocParsed = parseTocNavFile();
+  }
+
+  if (!tocParsed && !tocNcxItem.empty()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: falling back to NCX TOC\n", millis());
+    tocParsed = parseTocNcxFile();
+  }
+
+  if (!tocParsed) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: no TOC could be parsed, keeping fallback spine list\n", millis());
+  }
+
+  if (!bookMetadataCache->endTocPass()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not end TOC pass\n", millis());
+    return false;
+  }
+
+  if (!bookMetadataCache->endWrite()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not finish cache write\n", millis());
+    return false;
+  }
+
+  if (!bookMetadataCache->buildBookBin(filepath, bookMetadata, /*quickMode=*/true)) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: could not rebuild book.bin\n", millis());
+    return false;
+  }
+
+  if (!bookMetadataCache->cleanupTmpFiles()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: tmp cleanup failed, ignoring\n", millis());
+  }
+
+  bookMetadataCache.reset(new BookMetadataCache(cachePath));
+  if (!bookMetadataCache->load()) {
+    Serial.printf("[%lu] [EBP] ensureTocLoaded: failed to reload cache\n", millis());
+    return false;
+  }
+
+  largeBookMode = (bookMetadataCache->getSpineCount() > kLargeBookSpineThreshold);
+  Serial.printf("[%lu] [EBP] Lazy TOC rebuild complete: %d entries\n", millis(), bookMetadataCache->getTocCount());
   return true;
 }
 

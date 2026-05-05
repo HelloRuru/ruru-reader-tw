@@ -47,7 +47,9 @@ class ClientCallbacks : public NimBLEClientCallbacks {
   
   void onDisconnect(NimBLEClient* pClient, int reason) override {
     Serial.printf("BT Client disconnected: %s (reason: %d)", pClient->getPeerAddress().toString().c_str(), reason);
-    // Could trigger auto-reconnect here
+    if (g_instance) {
+      g_instance->onClientDisconnected(pClient->getPeerAddress().toString());
+    }
   }
 };
 
@@ -317,8 +319,41 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
     pClient->setClientCallbacks(&clientCallbacks, false);
 
     // 方案 A：用掃描時記下的真實地址類型（原寫死 BLE_ADDR_RANDOM 對 public 地址裝置會走進失敗路徑、觸發 cleanup race）
-    NimBLEAddress bleAddress(address, scannedAddrType);
-    Serial.printf("BT Using addrType=%d for %s", scannedAddrType, address.c_str());
+    // 修正：NimBLE 的 getAddressType() 對某些廣播器會回 0 (PUBLIC) 但實際是 random
+    // 從 MAC 第一個 byte bit[7:6] 自己判：11=static random, 01=RPA, 00=NRPA, 其他=public
+    uint8_t finalAddrType = scannedAddrType;
+    if (address.size() >= 2) {
+      // 解析第一個 byte（hex string "41:42:..." -> 0x41）
+      auto hexNibble = [](char c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return -1;
+      };
+      int hi = hexNibble(address[0]);
+      int lo = hexNibble(address[1]);
+      if (hi >= 0 && lo >= 0) {
+        uint8_t firstByte = (uint8_t)((hi << 4) | lo);
+        uint8_t topBits = firstByte >> 6;
+        uint8_t inferredType;
+        if (topBits == 0b11) {
+          inferredType = BLE_ADDR_RANDOM;        // static random
+        } else if (topBits == 0b01) {
+          inferredType = BLE_ADDR_RANDOM;        // resolvable private (RPA) - NimBLE 用 RANDOM 處理
+        } else if (topBits == 0b00) {
+          inferredType = BLE_ADDR_RANDOM;        // non-resolvable private
+        } else {
+          inferredType = BLE_ADDR_PUBLIC;        // public address
+        }
+        if (inferredType != scannedAddrType) {
+          Serial.printf("BT addrType override: scan said %d but MAC top bits 0x%02x suggest %d",
+                        scannedAddrType, firstByte, inferredType);
+          finalAddrType = inferredType;
+        }
+      }
+    }
+    NimBLEAddress bleAddress(address, finalAddrType);
+    Serial.printf("BT Using addrType=%d for %s", finalAddrType, address.c_str());
     
     if (!pClient->connect(bleAddress)) {
       lastError = "Connection failed";
@@ -486,21 +521,22 @@ bool BluetoothHIDManager::disconnectFromDevice(const std::string& address) {
     [&address](const ConnectedDevice& dev) { return dev.address == address; });
   
   if (it != _connectedDevices.end()) {
-    // Just disconnect - don't delete the client as NimBLE manages it
-    // and the disconnect callback will be called
-    if (it->client && it->client->isConnected()) {
+    NimBLEClient* client = it->client;
+    _connectedDevices.erase(it);
+    _manualDisconnectSuppressUntil = millis() + 10000;
+
+    // 先從清單移除，再做 disconnect，避免 selfDelete 後留下野指標
+    if (client && client->isConnected()) {
       try {
         Serial.printf("BT Calling disconnect on client...");
-        it->client->disconnect();
+        client->disconnect();
       } catch (const std::exception& e) {
         Serial.printf("BT Error during disconnect: %s", e.what());
       } catch (...) {
         Serial.printf("BT Unknown error during disconnect");
       }
     }
-    
-    // Remove from our list
-    _connectedDevices.erase(it);
+
     Serial.printf("BT Disconnected from %s", address.c_str());
     return true;
   }
@@ -530,6 +566,37 @@ ConnectedDevice* BluetoothHIDManager::findConnectedDevice(const std::string& add
     return &(*it);
   }
   return nullptr;
+}
+
+void BluetoothHIDManager::onClientDisconnected(const std::string& address) {
+  if (address.empty()) {
+    return;
+  }
+
+  const size_t before = _connectedDevices.size();
+  _connectedDevices.erase(std::remove_if(_connectedDevices.begin(), _connectedDevices.end(),
+                                         [&address](const ConnectedDevice& dev) {
+                                           return dev.address == address;
+                                         }),
+                          _connectedDevices.end());
+
+  if (_connectedDevices.size() != before) {
+    Serial.printf("BT Removed stale connection state for %s", address.c_str());
+  }
+}
+
+void BluetoothHIDManager::pruneDisconnectedDevices(bool logDetails) {
+  for (auto it = _connectedDevices.begin(); it != _connectedDevices.end();) {
+    const bool disconnected = (!it->client) || (!it->client->isConnected());
+    if (disconnected) {
+      if (logDetails) {
+        Serial.printf("BT Pruning disconnected device entry: %s", it->address.c_str());
+      }
+      it = _connectedDevices.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 void BluetoothHIDManager::processInputEvents() {
@@ -763,6 +830,8 @@ uint8_t BluetoothHIDManager::mapKeycodeToButton(uint8_t keycode, const DevicePro
 }
 
 void BluetoothHIDManager::updateActivity() {
+  pruneDisconnectedDevices(false);
+
   // Check inactivity timeouts every 10 seconds
   unsigned long now = millis();
   if (now - lastMaintenanceCheck < 10000) {
@@ -784,6 +853,10 @@ void BluetoothHIDManager::updateActivity() {
 }
 
 void BluetoothHIDManager::checkAutoReconnect() {
+  if (!_enabled) {
+    return;
+  }
+
   // Check for devices that were previously connected but are now disconnected
   // Attempt to reconnect to them automatically
   static unsigned long lastReconnectCheck = 0;
@@ -794,27 +867,38 @@ void BluetoothHIDManager::checkAutoReconnect() {
     return;
   }
   lastReconnectCheck = now;
-  
-  // Look for devices that should be auto-reconnected
-  for (auto& device : _connectedDevices) {
-    if (device.wasConnected && device.client) {
-      // Check if client is still connected
-      if (!device.client->isConnected()) {
-        Serial.printf("BT Device %s was disconnected, attempting auto-reconnect...", device.address.c_str());
-        
-        // Remove from list and reconnect
-        std::string addr = device.address;
-        disconnectFromDevice(addr);
-        
-        // Attempt reconnection
-        if (connectToDevice(addr)) {
-          Serial.printf("BT Auto-reconnected to %s", addr.c_str());
-        } else {
-          Serial.printf("BT Auto-reconnect to %s failed: %s", addr.c_str(), lastError.c_str());
-        }
-        break;  // Only reconnect one device per check
-      }
-    }
+
+  pruneDisconnectedDevices(false);
+
+  if (!_connectedDevices.empty() || _scanning || now < _manualDisconnectSuppressUntil) {
+    return;
+  }
+
+  std::string address;
+  std::string name;
+  if (!loadLastConnectedDevice(address, name) || address.empty()) {
+    return;
+  }
+
+  auto discoveredIt = std::find_if(_discoveredDevices.begin(), _discoveredDevices.end(),
+                                   [&address](const BluetoothDevice& dev) { return dev.address == address; });
+
+  if (discoveredIt == _discoveredDevices.end()) {
+    Serial.printf("BT Auto-reconnect: scanning for %s", address.c_str());
+    startScan(3000);
+    return;
+  }
+
+  if (!discoveredIt->isHID) {
+    Serial.printf("BT Auto-reconnect skipped: %s is not advertising HID", address.c_str());
+    return;
+  }
+
+  Serial.printf("BT Auto-reconnect attempting %s (%s)", name.c_str(), address.c_str());
+  if (connectToDeviceWithRetries(address, 1)) {
+    Serial.printf("BT Auto-reconnected to %s", address.c_str());
+  } else {
+    Serial.printf("BT Auto-reconnect to %s failed: %s", address.c_str(), lastError.c_str());
   }
 }
 
