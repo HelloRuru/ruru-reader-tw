@@ -210,6 +210,13 @@ void XMLCALL ContentOpfParser::startElement(void* userData, const XML_Char* name
       self->coverItemHref = href;
     }
 
+    // EPUB 3 規範：item 的 properties="cover-image" 標記 cover
+    // ChineseType base 原本只認 EPUB 2 的 <meta name="cover" content="..." />
+    // 加這個讓 EPUB 3 的網文 / 同人作品也能抓到 cover
+    if (properties.find("cover-image") != std::string::npos && self->coverItemHref.empty()) {
+      self->coverItemHref = href;
+    }
+
     if (mediaType == MEDIA_TYPE_NCX) {
       if (self->tocNcxPath.empty()) {
         self->tocNcxPath = href;
