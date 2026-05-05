@@ -1,0 +1,125 @@
+﻿Processing default (platform: espressif32 @ 6.12.0; board: esp32-c3-devkitm-1; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+Generated: src\network\html\FilesPageHtml.generated.h
+Generated: src\network\html\HomePageHtml.generated.h
+Generated: src\network\html\SettingsPageHtml.generated.h
+Generated: src\network\html\TextInputPageHtml.generated.h
+i18n generation script (no-op)
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-c3-devkitm-1.html
+PLATFORM: Espressif 32 (6.12.0) > Espressif ESP32-C3-DevKitM-1
+HARDWARE: ESP32C3 160MHz, 320KB RAM, 16MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-builtin, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b 
+ - tool-esptoolpy @ 2.40900.250804 (4.9.0) 
+ - toolchain-riscv32-esp @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 60 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- BatteryMonitor @ 1.0.0
+|-- InputManager @ 1.1.0
+|-- EInkDisplay @ 1.0.0
+|-- SDCardManager @ 2.0.0
+|-- ArduinoJson @ 7.4.2
+|-- QRCode @ 0.0.1
+|-- PNGdec @ 1.1.6
+|-- WebSockets @ 2.7.3
+|-- NimBLE-Arduino @ 2.3.6
+|-- EpdFontLoader
+|-- Serialization
+|-- Epub
+|-- Xtc
+|-- GfxRenderer
+|-- Txt
+|-- HTTPClient @ 2.0.0
+|-- WiFi @ 2.0.0
+|-- OpdsParser
+|-- EpdFont
+|-- Utf8
+|-- ESPmDNS @ 2.0.0
+|-- DNSServer @ 2.0.0
+|-- hal
+|-- KOReaderSync
+|-- FsHelpers
+|-- SPI @ 2.0.0
+|-- WiFiClientSecure @ 2.0.0
+|-- JpegToBmpConverter
+|-- WebServer @ 2.0.0
+Building in release mode
+Compiling .pio\build\default\src\CrossPointSettings.cpp.o
+Compiling .pio\build\default\src\CrossPointState.cpp.o
+Compiling .pio\build\default\src\MappedInputManager.cpp.o
+Compiling .pio\build\default\src\RecentBooksStore.cpp.o
+Compiling .pio\build\default\src\WifiCredentialStore.cpp.o
+Compiling .pio\build\default\src\activities\ActivityWithSubactivity.cpp.o
+Compiling .pio\build\default\src\activities\boot_sleep\BootActivity.cpp.o
+Compiling .pio\build\default\src\activities\boot_sleep\SleepActivity.cpp.o
+Compiling .pio\build\default\src\activities\browser\JianGuoBrowserActivity.cpp.o
+Compiling .pio\build\default\src\activities\browser\OpdsBookBrowserActivity.cpp.o
+Compiling .pio\build\default\src\activities\home\HomeActivity.cpp.o
+Compiling .pio\build\default\src\activities\home\MyLibraryActivity.cpp.o
+Compiling .pio\build\default\src\activities\home\RecentBooksActivity.cpp.o
+Compiling .pio\build\default\src\activities\network\CalibreConnectActivity.cpp.o
+Compiling .pio\build\default\src\activities\network\CrossPointWebServerActivity.cpp.o
+Compiling .pio\build\default\src\activities\network\NetworkModeSelectionActivity.cpp.o
+Compiling .pio\build\default\src\activities\network\WifiSelectionActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\EpubReaderActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\EpubReaderChapterSelectionActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\EpubReaderMenuActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\EpubReaderPercentSelectionActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\ImgReaderActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\JianGuoSyncActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\KOReaderSyncActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\ReaderActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\TxtReaderActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\TxtReaderChapterSelectionActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\XtcReaderActivity.cpp.o
+Compiling .pio\build\default\src\activities\reader\XtcReaderChapterSelectionActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\BluetoothSettingsActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\ButtonRemapActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\CalibreSettingsActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\ClearCacheActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\FontSelectionActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\JianGuoYunSettingsActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\KOReaderAuthActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\KOReaderSettingsActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\OtaUpdateActivity.cpp.o
+Compiling .pio\build\default\src\activities\settings\SettingsActivity.cpp.o
+Compiling .pio\build\default\src\activities\util\FullScreenMessageActivity.cpp.o
+Compiling .pio\build\default\src\activities\util\KeyboardEntryActivity.cpp.o
+Compiling .pio\build\default\src\components\UITheme.cpp.o
+Compiling .pio\build\default\src\components\themes\BaseTheme.cpp.o
+Compiling .pio\build\default\src\components\themes\lyra\LyraFlowTheme.cpp.o
+Compiling .pio\build\default\src\components\themes\lyra\LyraTheme.cpp.o
+Compiling .pio\build\default\src\main.cpp.o
+Compiling .pio\build\default\src\managers\FontManager.cpp.o
+pio.exe : src/components/themes/lyra/LyraFlowTheme.cpp:5:10: fatal error: HalStorage.h: No such file or directory
+At line:1 char:166
++ ... : $(Get-Date -Format 'HH:mm:ss')"; & $pio run -e default 2>&1 | Out-F ...
++                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (src/components/...le or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+********************************************************************
+* Looking for HalStorage.h dependency? Check our library registry!
+*
+* CLI  > platformio lib search "header:HalStorage.h"
+* Web  > https://registry.platformio.org/search?q=header:HalStorage.h
+*
+********************************************************************
+
+ #include <HalStorage.h>
+          ^~~~~~~~~~~~~~
+compilation terminated.
+Compiling .pio\build\default\src\network\CrossPointWebServer.cpp.o
+*** [.pio\build\default\src\components\themes\lyra\LyraFlowTheme.cpp.o] Error 1
+========================= [FAILED] Took 23.64 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+default        FAILED    00:00:23.635
+==================== 1 failed, 0 succeeded in 00:00:23.635 ====================
