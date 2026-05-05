@@ -277,6 +277,9 @@ void RoundedRaffTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int butt
     renderer.fillRoundedRect(rowX, rowY, rowWidth, rowHeight, kMenuRadius, isSelected ? Color::Black : Color::White);
     const int textY = rowY + (rowHeight - textLineHeight) / 2;
     const int textX = rowX + kInteractiveInsetX;
+    // ChineseType: drawText(..., black=true) = 黑色字 / black=false = 白色反白字
+    // 選中時黑底（Color::Black 已填）→ 用白字（false）
+    // 沒選中白底（Color::White 已填）→ 用黑字（true）
     if (selectedIndex == i) {
       renderer.drawText(kTitleFontId, textX, textY, truncatedLabel.c_str(), false, EpdFontFamily::BOLD);
     } else {

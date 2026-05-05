@@ -119,15 +119,17 @@ EpdFontFamily opendyslexic14FontFamily(&opendyslexic14RegularFont, &opendyslexic
                                        &opendyslexic14BoldItalicFont);
 #endif  // OMIT_FONTS
 
-EpdFont smallFont(&ubuntu_10_bold);
+// UI 字型替換為 jf-openhuninn（粉圓體，4877 字繁中字集）
+// SMALL_FONT 用 10pt、UI_10 用 10pt、UI_12 用 12pt
+EpdFont smallFont(&jfopenhuninn_10_regular);
 EpdFontFamily smallFontFamily(&smallFont);
 
-EpdFont ui10RegularFont(&ubuntu_10_bold);
-EpdFont ui10BoldFont(&ubuntu_10_bold);
+EpdFont ui10RegularFont(&jfopenhuninn_10_regular);
+EpdFont ui10BoldFont(&jfopenhuninn_10_regular);  // jf-openhuninn 沒 Bold style，用 Regular
 EpdFontFamily ui10FontFamily(&ui10RegularFont, &ui10BoldFont);
 
-EpdFont ui12RegularFont(&ubuntu_10_bold);
-EpdFont ui12BoldFont(&ubuntu_10_bold);
+EpdFont ui12RegularFont(&jfopenhuninn_12_regular);
+EpdFont ui12BoldFont(&jfopenhuninn_12_regular);
 EpdFontFamily ui12FontFamily(&ui12RegularFont, &ui12BoldFont);
 
 
