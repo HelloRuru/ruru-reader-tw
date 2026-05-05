@@ -10,14 +10,13 @@
 #include "CrossPointState.h"
 #include "EpubReaderChapterSelectionActivity.h"
 #include "EpubReaderPercentSelectionActivity.h"
-#include "KOReaderCredentialStore.h"
-#include "KOReaderSyncActivity.h"
+// stage10: KOReaderSync 砍掉，台灣使用者用不到
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 
-#include "JianGuoSyncActivity.h"
+// stage10: JianGuoSync 砍掉，台灣使用者用不到（堅果雲是中國服務）
 
 
 namespace {
@@ -660,57 +659,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       pendingGoHome = true;
       break;
     }
-    case EpubReaderMenuActivity::MenuAction::SYNC: {
-      if (KOREADER_STORE.hasCredentials()) {
-        xSemaphoreTake(renderingMutex, portMAX_DELAY);
-        const int currentPage = section ? section->currentPage : 0;
-        const int totalPages = section ? section->pageCount : 0;
-        exitActivity();
-        enterNewActivity(new KOReaderSyncActivity(
-            renderer, mappedInput, epub, epub->getPath(), currentSpineIndex, currentPage, totalPages,
-            [this]() {
-              // On cancel - defer exit to avoid use-after-free
-              pendingSubactivityExit = true;
-            },
-            [this](int newSpineIndex, int newPage) {
-              // On sync complete - update position and defer exit
-              if (currentSpineIndex != newSpineIndex || (section && section->currentPage != newPage)) {
-                currentSpineIndex = newSpineIndex;
-                nextPageNumber = newPage;
-                section.reset();
-              }
-              pendingSubactivityExit = true;
-            }));
-        xSemaphoreGive(renderingMutex);
-      }
-      break;
-    }
-    case EpubReaderMenuActivity::MenuAction::SYNCY: {
-        xSemaphoreTake(renderingMutex, portMAX_DELAY);
-        exitActivity();
-        enterNewActivity(new JianGuoSyncActivity(
-            renderer, mappedInput, epub, epub->getPath(),currentSpineIndex,
-            [this]() {
-              exitActivity();
-              updateRequired = true;
-            },
-            [this](int newSpineIndex) {
-              Serial.printf("[%lu] [JG] 同步完成，新的 spine index: %d\n", millis(), newSpineIndex);
-              // On sync complete - update position and defer exit
-              if (currentSpineIndex != newSpineIndex) {
-                currentSpineIndex = newSpineIndex;
-                exitActivity();
-                nextPageNumber = 0;
-                section.reset();
-                updateRequired = true;
-              }
-            }
-          
-          ));
-        xSemaphoreGive(renderingMutex);
-      break;
-    }
-
+    // stage10: SYNC (KOReader) 與 SYNCY (JianGuo) 砍掉，台灣使用者用不到
   }
 }
 

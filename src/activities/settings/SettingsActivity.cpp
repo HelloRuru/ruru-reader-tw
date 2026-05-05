@@ -7,14 +7,14 @@
 #include "CalibreSettingsActivity.h"
 #include "ClearCacheActivity.h"
 #include "CrossPointSettings.h"
-#include "KOReaderSettingsActivity.h"
+// stage10: KOReaderSettings 砍掉
 #include "MappedInputManager.h"
 #include "OtaUpdateActivity.h"
 #include "components/UITheme.h"
 #include <EpdFontLoader.h>
 #include "FontSelectionActivity.h"
 #include "fontIds.h"
-#include "JianGuoYunSettingsActivity.h"
+// stage10: JianGuoYunSettings 砍掉
 #include "languageMapper.h"
 #include "BluetoothSettingsActivity.h"
 
@@ -59,11 +59,10 @@ void SettingsActivity::onEnter() {
   }
 
   // Append device-only ACTION items
+  // stage10: 砍掉 KOReader Sync 與堅果雲資訊配置
   controlsSettings.insert(controlsSettings.begin(), SettingInfo::Action("Remap Front Buttons"));
   systemSettings.push_back(SettingInfo::Action("bluetooth"));
-  systemSettings.push_back(SettingInfo::Action("KOReader Sync"));
   systemSettings.push_back(SettingInfo::Action("OPDS Browser"));
-  systemSettings.push_back(SettingInfo::Action("堅果雲資訊配置"));
   systemSettings.push_back(SettingInfo::Action("Clear Cache"));
   systemSettings.push_back(SettingInfo::Action("Check for updates"));
   systemSettings.push_back(SettingInfo::Action("Set Custom Font Family"));
@@ -210,14 +209,7 @@ void SettingsActivity::toggleCurrentSetting() {
         updateRequired = true;
       }));
       xSemaphoreGive(renderingMutex);
-    } else if (strcmp(setting.name, "KOReader Sync") == 0) {
-      xSemaphoreTake(renderingMutex, portMAX_DELAY);
-      exitActivity();
-      enterNewActivity(new KOReaderSettingsActivity(renderer, mappedInput, [this] {
-        exitActivity();
-        updateRequired = true;
-      }));
-      xSemaphoreGive(renderingMutex);
+    // stage10: KOReader Sync 砍掉
     } else if (strcmp(setting.name, "OPDS Browser") == 0) {
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       exitActivity();
@@ -226,14 +218,7 @@ void SettingsActivity::toggleCurrentSetting() {
         updateRequired = true;
             }));
       xSemaphoreGive(renderingMutex);
-    } else if (strcmp(setting.name, "堅果雲資訊配置") == 0) {
-    xSemaphoreTake(renderingMutex, portMAX_DELAY);
-    exitActivity();
-    enterNewActivity(new JianGuoYunSettingsActivity(renderer, mappedInput, [this] {
-      exitActivity();
-      updateRequired = true;
-    }));
-      xSemaphoreGive(renderingMutex);
+    // stage10: 堅果雲資訊配置 砍掉
     } else if (strcmp(setting.name, "Clear Cache") == 0) {
       xSemaphoreTake(renderingMutex, portMAX_DELAY);
       exitActivity();

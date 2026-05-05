@@ -26,25 +26,22 @@ void UITheme::reload() {
 
 void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
   switch (type) {
-    case CrossPointSettings::UI_THEME::CLASSIC:
-      Serial.printf("[%lu] [UI] Using Classic theme\n", millis());
-      currentTheme = new BaseTheme();
-      currentMetrics = &BaseMetrics::values;
-      break;
+    // stage10: CLASSIC 砍掉，舊設定值 0 會 fallback 到 default (LYRA_FLOW)
     case CrossPointSettings::UI_THEME::LYRA:
       Serial.printf("[%lu] [UI] Using Lyra theme\n", millis());
       currentTheme = new LyraTheme();
       currentMetrics = &LyraMetrics::values;
       break;
-    case CrossPointSettings::UI_THEME::LYRA_FLOW:
-      Serial.printf("[%lu] [UI] Using Lyra Flow theme (carousel)\n", millis());
-      currentTheme = new LyraFlowTheme();
-      currentMetrics = &LyraFlowMetrics::values;
-      break;
     case CrossPointSettings::UI_THEME::LYRA_3COVERS:
       Serial.printf("[%lu] [UI] Using Lyra 3Covers theme\n", millis());
       currentTheme = new Lyra3CoversTheme();
       currentMetrics = &Lyra3CoversMetrics::values;
+      break;
+    case CrossPointSettings::UI_THEME::LYRA_FLOW:
+    default:
+      Serial.printf("[%lu] [UI] Using Lyra Flow theme (carousel)\n", millis());
+      currentTheme = new LyraFlowTheme();
+      currentMetrics = &LyraFlowMetrics::values;
       break;
     // stage5.5: 圓角 theme 暫時砍掉（選單空白 bug 還沒修）
     // case CrossPointSettings::UI_THEME::ROUNDEDRAFF:

@@ -13,7 +13,7 @@
 #include "Battery.h"
 #include "CrossPointSettings.h"
 #include "CrossPointState.h"
-#include "KOReaderCredentialStore.h"
+// stage10: KOReaderCredentialStore 砍掉
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
 #include "activities/boot_sleep/BootActivity.h"
@@ -28,7 +28,7 @@
 #include "activities/util/FullScreenMessageActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
-#include "activities/browser/JianGuoBrowserActivity.h"
+// stage10: JianGuoBrowserActivity 砍掉
 
 #include <BluetoothHIDManager.h>
 #include "util/ButtonNavigator.h"
@@ -283,9 +283,9 @@ void onGoToBrowser() {
   exitActivity();
   enterNewActivity(new OpdsBookBrowserActivity(renderer, mappedInputManager, onGoHome));
 }
+// stage10: 堅果雲砍掉，留空 callback 讓 HomeActivity 簽名不變
 void onGoToJianGuoYun() {
-  exitActivity();
-  enterNewActivity(new JianGuoBrowserActivity(renderer, mappedInputManager, onGoHome));
+  // no-op
 }
 
 void onGoHome() {
@@ -351,7 +351,7 @@ void setup() {
   }
 
   SETTINGS.loadFromFile();
-  KOREADER_STORE.loadFromFile();
+  // stage10: KOREADER_STORE 砍掉
   UITheme::getInstance().reload();
 
   ButtonNavigator::setMappedInputManager(mappedInputManager);

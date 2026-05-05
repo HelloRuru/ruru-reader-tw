@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "CrossPointSettings.h"
-#include "KOReaderCredentialStore.h"
+// stage10: KOReaderCredentialStore 砍掉
 #include "activities/settings/SettingsActivity.h"
 
 // Shared settings list used by both the device settings UI and the web settings API.
@@ -63,36 +63,8 @@ inline std::vector<SettingInfo> getSettingsList() {
                         {"1 min", "5 min", "10 min", "15 min", "30 min"}, "sleepTimeout", "System"),
       //SettingInfo::Toggle("bluetoothEnabled", &CrossPointSettings::bluetoothEnabled, "bluetoothEnabled", "System"),
 
-      // --- KOReader Sync (web-only, uses KOReaderCredentialStore) ---
-      SettingInfo::DynamicString(
-          "KOReader Username", [] { return KOREADER_STORE.getUsername(); },
-          [](const std::string& v) {
-            KOREADER_STORE.setCredentials(v, KOREADER_STORE.getPassword());
-            KOREADER_STORE.saveToFile();
-          },
-          "koUsername", "KOReader Sync"),
-      SettingInfo::DynamicString(
-          "KOReader Password", [] { return KOREADER_STORE.getPassword(); },
-          [](const std::string& v) {
-            KOREADER_STORE.setCredentials(KOREADER_STORE.getUsername(), v);
-            KOREADER_STORE.saveToFile();
-          },
-          "koPassword", "KOReader Sync"),
-      SettingInfo::DynamicString(
-          "Sync Server URL", [] { return KOREADER_STORE.getServerUrl(); },
-          [](const std::string& v) {
-            KOREADER_STORE.setServerUrl(v);
-            KOREADER_STORE.saveToFile();
-          },
-          "koServerUrl", "KOReader Sync"),
-      SettingInfo::DynamicEnum(
-          "Document Matching", {"Filename", "Binary"},
-          [] { return static_cast<uint8_t>(KOREADER_STORE.getMatchMethod()); },
-          [](uint8_t v) {
-            KOREADER_STORE.setMatchMethod(static_cast<DocumentMatchMethod>(v));
-            KOREADER_STORE.saveToFile();
-          },
-          "koMatchMethod", "KOReader Sync"),
+      // stage10: KOReader Sync 砍掉
+      // stage10: 堅果雲配置 砍掉
 
       // --- OPDS Browser (web-only, uses CrossPointSettings char arrays) ---
       SettingInfo::String("OPDS Server URL", SETTINGS.opdsServerUrl, sizeof(SETTINGS.opdsServerUrl), "opdsServerUrl",
@@ -101,13 +73,5 @@ inline std::vector<SettingInfo> getSettingsList() {
                           "OPDS Browser"),
       SettingInfo::String("OPDS Password", SETTINGS.opdsPassword, sizeof(SETTINGS.opdsPassword), "opdsPassword",
                           "OPDS Browser"),
-
-      // --- 坚果云配置 (web-only, uses CrossPointSettings char arrays) ---
-      SettingInfo::String("堅果雲賬號", SETTINGS.jgUsername, sizeof(SETTINGS.jgUsername), "jgUsername",
-                          "堅果雲配置"),
-      SettingInfo::String("堅果雲應用密碼", SETTINGS.jgAppPassword, sizeof(SETTINGS.jgAppPassword), "jgAppPassword",
-                          "堅果雲配置"),
-      SettingInfo::String("堅果雲讀取目錄", SETTINGS.jgBookFolder, sizeof(SETTINGS.jgBookFolder), "jgBookFolder",
-                          "堅果雲配置"),
   };
 }

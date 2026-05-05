@@ -40,11 +40,11 @@ class EpubReaderMenuActivity final : public ActivityWithSubactivity {
   };
 
   // Fixed menu layout (order matters for up/down navigation).
+  // stage10: SYNC (KOReader) 與 SYNCY (堅果雲) 砍掉
   const std::vector<MenuItem> menuItems = {
       {MenuAction::SELECT_CHAPTER, "進入章節目錄"}, {MenuAction::ROTATE_SCREEN, "閱讀方向"},
-      {MenuAction::GO_TO_PERCENT, "直達進度 %"},        {MenuAction::GO_HOME, "返回主頁"},
-      {MenuAction::SYNC, "進度同步(koreader)"},           {MenuAction::DELETE_CACHE, "清理快取"},
-      {MenuAction::SYNCY, "進度同步(開源閱讀)"}};
+      {MenuAction::GO_TO_PERCENT, "直達進度 %"},    {MenuAction::GO_HOME, "返回主頁"},
+      {MenuAction::DELETE_CACHE, "清理快取"}};
 
   int selectedIndex = 0;
   bool updateRequired = false;

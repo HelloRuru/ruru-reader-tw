@@ -121,6 +121,7 @@ class CrossPointSettings {
 
   // UI Theme
   // stage5.5: 圓角 theme 暫時砍掉（選單空白 bug 還沒修），但保留 enum 值給之後修好加回來
+  // stage10: CLASSIC 砍掉（保留 enum 值避免破壞 settings 檔，但 UITheme.cpp 不再有 case，會 fallback 到 LYRA_FLOW）
   enum UI_THEME { CLASSIC = 0, LYRA = 1, LYRA_FLOW = 2, LYRA_3COVERS = 3 };
 
   // Sleep screen settings
@@ -197,7 +198,7 @@ uint8_t extraline = 1;
   // Long-press chapter skip on side buttons
   uint8_t longPressChapterSkip = 1;
   // UI Theme
-  uint8_t uiTheme = LYRA;
+  uint8_t uiTheme = LYRA_FLOW;  // stage10: 預設改為 Flow
   // Sunlight fading compensation
   uint8_t fadingFix = 0;
   // Use book's embedded CSS styles for EPUB rendering (1 = enabled, 0 = disabled)
