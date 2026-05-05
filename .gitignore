@@ -1,0 +1,14 @@
+.pio
+.idea
+.DS_Store
+.vscode
+lib/EpdFont/fontsrc
+*.generated.h
+.vs
+build
+**/__pycache__/
+/compile_commands.json
+/.cache
+build.log
+build_final.txt
+build_output.txt
