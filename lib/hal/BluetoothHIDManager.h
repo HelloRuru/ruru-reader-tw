@@ -48,6 +48,7 @@ public:
   void startScan(uint32_t durationMs = 10000);
   void stopScan();
   bool isScanning() const { return _scanning; }
+  void _setScanningFinished() { _scanning = false; }  // 給 ScanCallbacks::onScanEnd 用
   const std::vector<BluetoothDevice>& getDiscoveredDevices() const { return _discoveredDevices; }
 
   // Connection

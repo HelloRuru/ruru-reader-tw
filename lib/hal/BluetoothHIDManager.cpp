@@ -29,6 +29,10 @@ class ScanCallbacks : public NimBLEScanCallbacks {
   
   void onScanEnd(const NimBLEScanResults& results, int reason) override {
     Serial.printf("BT onScanEnd callback: %d devices, reason: %d", results.getCount(), reason);
+    // 配合非阻塞掃描：scan 結束時清 flag，UI 可以判斷掃描完成
+    if (g_instance) {
+      g_instance->_setScanningFinished();
+    }
   }
 };
 
@@ -174,28 +178,21 @@ void BluetoothHIDManager::startScan(uint32_t durationMs) {
     pScan->setInterval(100);
     pScan->setWindow(99);
     
-    Serial.printf("BT Starting continuous scan (duration: 0 = continuous)...");
-    // In NimBLE 2.x, duration=0 means scan continuously until stop() is called
-    // Parameter 1: 0 = continuous scan
-    // Parameter 2: isContinue (false = clear old results)
-    bool started = pScan->start(0, false);
-    
+    // 改成非阻塞掃描：NimBLE 自己用 duration 計時、callback 回到 onScanEnd
+    // 原本 delay(durationMs) 會卡住 main loop 10 秒，UI 期間都不能操作
+    Serial.printf("BT Starting non-blocking scan for %lu ms...", durationMs);
+    bool started = pScan->start(durationMs, false);
+
     if (!started) {
       Serial.printf("BT Failed to start scan!");
       _scanning = false;
       return;
     }
-    
-    Serial.printf("BT Scan started, waiting %lu ms...", durationMs);
-    // Wait for the specified duration
-    delay(durationMs);
-    
-    Serial.printf("BT Stopping scan after %lu ms...", durationMs);
-    // Stop the scan
-    pScan->stop();
-    
-    _scanning = false;
-    Serial.printf("BT Scan complete, found %d devices", _discoveredDevices.size());
+
+    Serial.printf("BT Scan started in background (duration handled by NimBLE)");
+    // 不再 delay 阻塞，UI 可以即時更新
+    // _scanning 會在 onScanEnd callback 中被清為 false（如果需要）
+    // 這裡先不清，避免 UI 端誤判已完成
   } catch (const std::exception& e) {
     Serial.printf("BT Scan failed: %s", e.what());
     _scanning = false;
