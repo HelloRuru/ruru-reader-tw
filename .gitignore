@@ -12,3 +12,6 @@ build
 build.log
 build_final.txt
 build_output.txt
+build_*.log
+*.original
+*.carousel
