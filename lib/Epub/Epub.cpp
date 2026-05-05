@@ -344,7 +344,19 @@ bool Epub::load(const bool buildIfMissing, const bool skipLoadingCss) {
   }
   Serial.printf("[%lu] [EBP] OPF pass completed in %lu ms\n", millis(), millis() - opfStart);
 
+  // stage8: Large Book Mode 偵測
+  // 觸發條件：spine > 500（網文常見幾千章）
+  // 大書模式跳過 TOC pass，避免首次開書卡 30+ 秒解析 ncx/nav（往往 100KB+ XML）
+  // TOC 改成「進入章節目錄頁時才解析」（lazy load）
+  constexpr int LARGE_BOOK_SPINE_THRESHOLD = 500;
+  largeBookMode = (bookMetadataCache->getSpineCount() > LARGE_BOOK_SPINE_THRESHOLD);
+  if (largeBookMode) {
+    Serial.printf("[%lu] [EBP] LARGE BOOK MODE (spine=%d > %d): skipping TOC pass, using rough progress\n",
+                  millis(), bookMetadataCache->getSpineCount(), LARGE_BOOK_SPINE_THRESHOLD);
+  }
+
   // TOC Pass - try EPUB 3 nav first, fall back to NCX
+  // stage8: 大書模式跳過 TOC pass（lazy load）
   const uint32_t tocStart = millis();
   if (!bookMetadataCache->beginTocPass()) {
     Serial.printf("[%lu] [EBP] Could not begin writing toc pass\n", millis());
@@ -353,28 +365,30 @@ bool Epub::load(const bool buildIfMissing, const bool skipLoadingCss) {
 
   bool tocParsed = false;
 
-  // Try EPUB 3 nav document first (preferred)
-  if (!tocNavItem.empty()) {
-    Serial.printf("[%lu] [EBP] Attempting to parse EPUB 3 nav document\n", millis());
-    tocParsed = parseTocNavFile();
-  }
-
-  // Fall back to NCX if nav parsing failed or wasn't available
-  if (!tocParsed && !tocNcxItem.empty()) {
-    Serial.printf("[%lu] [EBP] Falling back to NCX TOC\n", millis());
-    tocParsed = parseTocNcxFile();
-  }
-
-  if (!tocParsed) {
-    Serial.printf("[%lu] [EBP] Warning: Could not parse any TOC format\n", millis());
-    // Continue anyway - book will work without TOC
+  if (largeBookMode) {
+    Serial.printf("[%lu] [EBP] Skipping TOC parse in large book mode\n", millis());
+    // 仍寫一個空 TOC pass 讓 cache 結構完整（之後 lazy load 會補）
+  } else {
+    // 正常書：解析 TOC（EPUB 3 nav 優先，fallback NCX）
+    if (!tocNavItem.empty()) {
+      Serial.printf("[%lu] [EBP] Attempting to parse EPUB 3 nav document\n", millis());
+      tocParsed = parseTocNavFile();
+    }
+    if (!tocParsed && !tocNcxItem.empty()) {
+      Serial.printf("[%lu] [EBP] Falling back to NCX TOC\n", millis());
+      tocParsed = parseTocNcxFile();
+    }
+    if (!tocParsed) {
+      Serial.printf("[%lu] [EBP] Warning: Could not parse any TOC format\n", millis());
+    }
   }
 
   if (!bookMetadataCache->endTocPass()) {
     Serial.printf("[%lu] [EBP] Could not end writing toc pass\n", millis());
     return false;
   }
-  Serial.printf("[%lu] [EBP] TOC pass completed in %lu ms\n", millis(), millis() - tocStart);
+  Serial.printf("[%lu] [EBP] TOC pass completed in %lu ms (largeBookMode=%d)\n",
+                millis(), millis() - tocStart, largeBookMode);
 
   // Close the cache files
   if (!bookMetadataCache->endWrite()) {
@@ -383,8 +397,9 @@ bool Epub::load(const bool buildIfMissing, const bool skipLoadingCss) {
   }
 
   // Build final book.bin
+  // stage8: 大書模式跳過 ZIP cumulative size lookup（progress 改用 spine index 比例）
   const uint32_t buildStart = millis();
-  if (!bookMetadataCache->buildBookBin(filepath, bookMetadata)) {
+  if (!bookMetadataCache->buildBookBin(filepath, bookMetadata, /*quickMode=*/largeBookMode)) {
     Serial.printf("[%lu] [EBP] Could not update mappings and sizes\n", millis());
     return false;
   }
@@ -762,8 +777,12 @@ int Epub::getSpineIndexForTextReference() const {
 // Calculate progress in book (returns 0.0-1.0)
 float Epub::calculateProgress(const int currentSpineIndex, const float currentSpineRead) const {
   const size_t bookSize = getBookSize();
-  if (bookSize == 0) {
-    return 0.0f;
+  // stage8: 大書模式或還沒算 cumulative size → 用粗略 progress (spine index 比例)
+  // 避免大書 buildBookBin 階段就算所有 cumulative size 卡 30+ 秒
+  if (bookSize == 0 || largeBookMode) {
+    const int totalSpine = getSpineItemsCount();
+    if (totalSpine <= 0) return 0.0f;
+    return (static_cast<float>(currentSpineIndex) + currentSpineRead) / static_cast<float>(totalSpine);
   }
   const size_t prevChapterSize = (currentSpineIndex >= 1) ? getCumulativeSpineItemSize(currentSpineIndex - 1) : 0;
   const size_t curChapterSize = getCumulativeSpineItemSize(currentSpineIndex) - prevChapterSize;

@@ -29,6 +29,8 @@ class Epub {
   std::unique_ptr<CssParser> cssParser;
   // CSS files
   std::vector<std::string> cssFiles;
+  // stage8: 大書模式（spine>500 或 OPF/nav>100KB），跳過 TOC pass、用粗略 progress
+  bool largeBookMode = false;
 
   bool findContentOpfFile(std::string* contentOpfFile) const;
   bool parseContentOpf(BookMetadataCache::BookMetadata& bookMetadata, bool parseSpine = true);
@@ -74,4 +76,6 @@ class Epub {
   size_t getBookSize() const;
   float calculateProgress(int currentSpineIndex, float currentSpineRead) const;
   const CssParser* getCssParser() const { return cssParser.get(); }
+  // stage8: 是否為大書模式（首次開書跳過 TOC + 粗略 progress）
+  bool isLargeBookMode() const { return largeBookMode; }
 };

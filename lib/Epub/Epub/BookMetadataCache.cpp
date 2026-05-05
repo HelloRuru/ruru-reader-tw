@@ -96,7 +96,7 @@ bool BookMetadataCache::endWrite() {
   return true;
 }
 
-bool BookMetadataCache::buildBookBin(const std::string& epubPath, const BookMetadata& metadata) {
+bool BookMetadataCache::buildBookBin(const std::string& epubPath, const BookMetadata& metadata, bool quickMode) {
   // Open all three files, writing to meta, reading from spine and toc
   if (!SdMan.openFileForWrite("BMC", cachePath + bookBinFile, bookFile)) {
     return false;
@@ -184,7 +184,14 @@ bool BookMetadataCache::buildBookBin(const std::string& epubPath, const BookMeta
   std::vector<uint32_t> spineSizes;
   bool useBatchSizes = false;
 
-  if (spineCount >= LARGE_SPINE_THRESHOLD) {
+  // stage8: quickMode 跳過 ZIP cumulative size lookup
+  // 對 2752 章網文 EPUB，ZIP central directory scan 一次就要十幾秒
+  // 粗略 progress 改用 spine index 比例（在 Epub::calculateProgress）
+  if (quickMode) {
+    Serial.printf("[%lu] [BMC] Quick mode: skipping ZIP size lookup for %d spine items\n", millis(), spineCount);
+    spineSizes.assign(spineCount, 0);
+    useBatchSizes = true;  // 走 batch 路徑、size 全 0、cumulativeSize 全 0
+  } else if (spineCount >= LARGE_SPINE_THRESHOLD) {
     Serial.printf("[%lu] [BMC] Using batch size lookup for %d spine items\n", millis(), spineCount);
 
     std::vector<ZipFile::SizeTarget> targets;
@@ -235,7 +242,10 @@ bool BookMetadataCache::buildBookBin(const std::string& epubPath, const BookMeta
     lastSpineTocIndex = spineEntry.tocIndex;
 
     size_t itemSize = 0;
-    if (useBatchSizes) {
+    if (quickMode) {
+      // stage8: quickMode 直接 size=0，不做任何 zip lookup
+      itemSize = 0;
+    } else if (useBatchSizes) {
       itemSize = spineSizes[i];
       if (itemSize == 0) {
         const std::string path = FsHelpers::normalisePath(spineEntry.href);

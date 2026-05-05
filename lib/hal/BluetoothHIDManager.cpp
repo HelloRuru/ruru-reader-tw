@@ -313,7 +313,8 @@ bool BluetoothHIDManager::connectToDevice(const std::string& address) {
     pClient->setSelfDelete(true, true);
     
     static ClientCallbacks clientCallbacks;
-    pClient->setClientCallbacks(&clientCallbacks);
+    // clientCallbacks 是靜態物件，不能交給 NimBLE delete，否則 client 自刪時會 free 到非 heap 記憶體
+    pClient->setClientCallbacks(&clientCallbacks, false);
 
     // 方案 A：用掃描時記下的真實地址類型（原寫死 BLE_ADDR_RANDOM 對 public 地址裝置會走進失敗路徑、觸發 cleanup race）
     NimBLEAddress bleAddress(address, scannedAddrType);
