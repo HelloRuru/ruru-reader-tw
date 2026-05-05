@@ -3,10 +3,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 class GfxRenderer;
 struct RecentBook;
+struct BookReadingStats;
 
 struct Rect {
   int x;
@@ -47,15 +49,52 @@ struct ThemeMetrics {
   int homeCoverHeight;
   int homeCoverTileHeight;
   int homeRecentBooksCount;
+  bool homeContinueReadingInMenu;
+  int homeMenuTopOffset;
 
   int buttonHintsHeight;
   int sideButtonHintsWidth;
 
+  int progressBarHeight;
+  int progressBarMarginTop;
+  int statusBarHorizontalMargin;
+  int statusBarVerticalMargin;
+
+  int keyboardKeyWidth;
+  int keyboardKeyHeight;
+  int keyboardKeySpacing;
+  int keyboardBottomKeyHeight;
+  int keyboardBottomKeySpacing;
+  bool keyboardBottomAligned;
+  bool keyboardCenteredText;
+  int keyboardVerticalOffset;
+  int keyboardTextFieldWidthPercent;
+  int keyboardWidthPercent;
+  int keyboardKeyCornerRadius;
+
+  // ChineseType 保留欄位（reader 底部進度條用 + version 顯示位置）
+  int bookProgressBarHeight;
   int versionTextRightX;
   int versionTextY;
-
-  int bookProgressBarHeight;
 };
+
+enum UIIcon {
+  Folder,
+  Text,
+  Image,
+  Book,
+  BookmarkIcon,
+  File,
+  Recent,
+  Settings,
+  Transfer,
+  Library,
+  Wifi,
+  Hotspot,
+  Chart
+};
+
+enum class KeyboardKeyType { Normal, Shift, Mode, Space, Del, Ok, Disabled };
 
 // Default theme implementation (Classic Theme)
 // Additional themes can inherit from this and override methods as needed
@@ -70,21 +109,38 @@ constexpr ThemeMetrics values = {.batteryWidth = 15,
                                  .contentSidePadding = 20,
                                  .listRowHeight = 30,
                                  .listWithSubtitleRowHeight = 65,
-                                 .menuRowHeight = 45,
-                                 .menuSpacing = 8,
+                                 .menuRowHeight = 38,
+                                 .menuSpacing = 6,
                                  .tabSpacing = 10,
                                  .tabBarHeight = 50,
                                  .scrollBarWidth = 4,
                                  .scrollBarRightOffset = 5,
-                                 .homeTopPadding = 20,
-                                 .homeCoverHeight = 400,
-                                 .homeCoverTileHeight = 400,
+                                 .homeTopPadding = 40,
+                                 .homeCoverHeight = 370,
+                                 .homeCoverTileHeight = 370,
                                  .homeRecentBooksCount = 1,
+                                 .homeContinueReadingInMenu = false,
+                                 .homeMenuTopOffset = 10,
                                  .buttonHintsHeight = 40,
                                  .sideButtonHintsWidth = 30,
+                                 .progressBarHeight = 16,
+                                 .progressBarMarginTop = 1,
+                                 .statusBarHorizontalMargin = 5,
+                                 .statusBarVerticalMargin = 19,
+                                 .keyboardKeyWidth = 22,
+                                 .keyboardKeyHeight = 40,
+                                 .keyboardKeySpacing = 0,
+                                 .keyboardBottomKeyHeight = 35,
+                                 .keyboardBottomKeySpacing = 5,
+                                 .keyboardBottomAligned = true,
+                                 .keyboardCenteredText = false,
+                                 .keyboardVerticalOffset = -13,
+                                 .keyboardTextFieldWidthPercent = 85,
+                                 .keyboardWidthPercent = 90,
+                                 .keyboardKeyCornerRadius = 0,
+                                 .bookProgressBarHeight = 4,
                                  .versionTextRightX = 20,
-                                 .versionTextY = 738,
-                                 .bookProgressBarHeight = 4};
+                                 .versionTextY = 738};
 }
 
 class BaseTheme {
@@ -93,26 +149,51 @@ class BaseTheme {
 
   // Component drawing methods
   virtual void drawProgressBar(const GfxRenderer& renderer, Rect rect, size_t current, size_t total) const;
-  virtual void drawBattery(const GfxRenderer& renderer, Rect rect, bool showPercentage = true) const;
+  virtual void drawBatteryLeft(const GfxRenderer& renderer, Rect rect,
+                               bool showPercentage = true) const;  // Left aligned (reader mode)
+  virtual void drawBatteryRight(const GfxRenderer& renderer, Rect rect,
+                                bool showPercentage = true) const;  // Right aligned (UI headers)
   virtual void drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
                                const char* btn4) const;
   virtual void drawSideButtonHints(const GfxRenderer& renderer, const char* topBtn, const char* bottomBtn) const;
   virtual void drawList(const GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
                         const std::function<std::string(int index)>& rowTitle,
-                        const std::function<std::string(int index)>& rowSubtitle,
-                        const std::function<std::string(int index)>& rowIcon,
-                        const std::function<std::string(int index)>& rowValue) const;
-
-  virtual void drawHeader(const GfxRenderer& renderer, Rect rect, const char* title) const;
+                        const std::function<std::string(int index)>& rowSubtitle = nullptr,
+                        const std::function<UIIcon(int index)>& rowIcon = nullptr,
+                        const std::function<std::string(int index)>& rowValue = nullptr, bool highlightValue = false,
+                        const std::function<bool(int index)>& isHeader = nullptr) const;
+  virtual void drawHeader(const GfxRenderer& renderer, Rect rect, const char* title,
+                          const char* subtitle = nullptr) const;
+  virtual void drawSubHeader(const GfxRenderer& renderer, Rect rect, const char* label,
+                             const char* rightLabel = nullptr) const;
   virtual void drawTabBar(const GfxRenderer& renderer, Rect rect, const std::vector<TabInfo>& tabs,
                           bool selected) const;
   virtual void drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                                    const int selectorIndex, bool& coverRendered, bool& coverBufferStored,
-                                   bool& bufferRestored, std::function<bool()> storeCoverBuffer) const;
+                                   bool& bufferRestored, std::function<bool()> storeCoverBuffer,
+                                   const BookReadingStats* stats = nullptr, float progressPercent = -1.0f) const;
   virtual void drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount, int selectedIndex,
                               const std::function<std::string(int index)>& buttonLabel,
-                              const std::function<std::string(int index)>& rowIcon) const;
+                              const std::function<UIIcon(int index)>& rowIcon) const;
   virtual Rect drawPopup(const GfxRenderer& renderer, const char* message) const;
   virtual void fillPopupProgress(const GfxRenderer& renderer, const Rect& layout, const int progress) const;
+  virtual void drawStatusBar(GfxRenderer& renderer, const float bookProgress, const int currentPage,
+                             const int pageCount, std::string title, const int paddingBottom = 0,
+                             const int textYOffset = 0, const bool isPageBookmarked = false) const;
+  virtual void drawHelpText(const GfxRenderer& renderer, Rect rect, const char* label) const;
+  virtual void drawTextField(const GfxRenderer& renderer, Rect rect, const int textWidth, bool cursorMode = false,
+                             int contentStartX = 0, int contentWidth = 0) const;
+  virtual void drawKeyboardKey(const GfxRenderer& renderer, Rect rect, const char* label, const bool isSelected,
+                               const char* secondaryLabel = nullptr, KeyboardKeyType keyType = KeyboardKeyType::Normal,
+                               bool inactiveSelection = false) const;
+  virtual bool showsFileIcons() const { return false; }
+
+  // ChineseType 保留方法（reader 用，與 Carousel 的 drawBatteryRight / drawProgressBar 並存）
+  virtual void drawBattery(const GfxRenderer& renderer, Rect rect, bool showPercentage = true) const;
   virtual void drawReadingProgressBar(const GfxRenderer& renderer, const size_t bookProgress) const;
+
+  // Shared constants and helpers for battery drawing (used by all themes)
+  static constexpr int batteryPercentSpacing = 4;
+  static void drawBatteryOutline(const GfxRenderer& renderer, int x, int y, int battWidth, int rectHeight);
+  static void drawBatteryLightningBolt(const GfxRenderer& renderer, int boltX, int boltY);
 };
