@@ -160,8 +160,9 @@ void BaseTheme::drawSideButtonHints(const GfxRenderer& renderer, const char* top
 void BaseTheme::drawList(const GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
                          const std::function<std::string(int index)>& rowTitle,
                          const std::function<std::string(int index)>& rowSubtitle,
-                         const std::function<std::string(int index)>& rowIcon,
-                         const std::function<std::string(int index)>& rowValue) const {
+                         const std::function<UIIcon(int index)>& /*rowIcon*/,
+                         const std::function<std::string(int index)>& rowValue, bool /*highlightValue*/,
+                         const std::function<bool(int index)>& /*isHeader*/) const {
   int rowHeight =
       (rowSubtitle != nullptr) ? BaseMetrics::values.listWithSubtitleRowHeight : BaseMetrics::values.listRowHeight;
   int pageItems = rect.height / rowHeight;
@@ -227,7 +228,8 @@ void BaseTheme::drawList(const GfxRenderer& renderer, Rect rect, int itemCount, 
   }
 }
 
-void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* title) const {
+void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* title,
+                           const char* /*subtitle*/) const {
   const bool showBatteryPercentage =
       SETTINGS.hideBatteryPercentage != CrossPointSettings::HIDE_BATTERY_PERCENTAGE::HIDE_ALWAYS;
   int batteryX = rect.x + rect.width - BaseMetrics::values.contentSidePadding - BaseMetrics::values.batteryWidth;
@@ -282,7 +284,8 @@ void BaseTheme::drawTabBar(const GfxRenderer& renderer, const Rect rect, const s
 // TODO: Refactor method to make it cleaner, split into smaller methods
 void BaseTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                                     const int selectorIndex, bool& coverRendered, bool& coverBufferStored,
-                                    bool& bufferRestored, std::function<bool()> storeCoverBuffer) const {
+                                    bool& bufferRestored, std::function<bool()> storeCoverBuffer,
+                                    const BookReadingStats* /*stats*/, float /*progressPercent*/) const {
   // --- Top "book" card for the current title (selectorIndex == 0) ---
   const int bookWidth = rect.width / 2;
   const int bookHeight = rect.height;
@@ -577,7 +580,7 @@ void BaseTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
 
 void BaseTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount, int selectedIndex,
                                const std::function<std::string(int index)>& buttonLabel,
-                               const std::function<std::string(int index)>& rowIcon) const {
+                               const std::function<UIIcon(int index)>& /*rowIcon*/) const {
   for (int i = 0; i < buttonCount; ++i) {
     const int tileY = BaseMetrics::values.verticalSpacing + rect.y +
                       static_cast<int>(i) * (BaseMetrics::values.menuRowHeight + BaseMetrics::values.menuSpacing);
@@ -646,3 +649,24 @@ void BaseTheme::drawReadingProgressBar(const GfxRenderer& renderer, const size_t
   const int barWidth = progressBarMaxWidth * bookProgress / 100;
   renderer.fillRect(vieweableMarginLeft, progressBarY, barWidth, BaseMetrics::values.bookProgressBarHeight, true);
 }
+
+// === Carousel 新介面方法 stub 實作（暫委派到 ChineseType 既有方法或留空） ===
+// drawBatteryLeft / drawBatteryRight 都委派給 drawBattery（ChineseType 既有實作）
+void BaseTheme::drawBatteryLeft(const GfxRenderer& renderer, Rect rect, const bool showPercentage) const {
+  drawBattery(renderer, rect, showPercentage);
+}
+void BaseTheme::drawBatteryRight(const GfxRenderer& renderer, Rect rect, const bool showPercentage) const {
+  drawBattery(renderer, rect, showPercentage);
+}
+// drawSubHeader / drawStatusBar / drawHelpText / drawTextField / drawKeyboardKey 暫留空 stub
+void BaseTheme::drawSubHeader(const GfxRenderer& /*renderer*/, Rect /*rect*/, const char* /*label*/,
+                              const char* /*rightLabel*/) const {}
+void BaseTheme::drawStatusBar(GfxRenderer& /*renderer*/, const float /*bookProgress*/, const int /*currentPage*/,
+                              const int /*pageCount*/, std::string /*title*/, const int /*paddingBottom*/,
+                              const int /*textYOffset*/, const bool /*isPageBookmarked*/) const {}
+void BaseTheme::drawHelpText(const GfxRenderer& /*renderer*/, Rect /*rect*/, const char* /*label*/) const {}
+void BaseTheme::drawTextField(const GfxRenderer& /*renderer*/, Rect /*rect*/, const int /*textWidth*/,
+                              bool /*cursorMode*/, int /*contentStartX*/, int /*contentWidth*/) const {}
+void BaseTheme::drawKeyboardKey(const GfxRenderer& /*renderer*/, Rect /*rect*/, const char* /*label*/,
+                                const bool /*isSelected*/, const char* /*secondaryLabel*/,
+                                KeyboardKeyType /*keyType*/, bool /*inactiveSelection*/) const {}
