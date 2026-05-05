@@ -2,10 +2,181 @@
 
 #include <SDCardManager.h>
 #include <Serialization.h>
+#include <ctype.h>
 
 #include "Page.h"
 #include "hyphenation/Hyphenator.h"
 #include "parsers/ChapterHtmlSlimParser.h"
+
+// =====================================================================
+// stage11: HTML 鬆散標籤自閉合補正（XHTML void-element fixer）
+// =====================================================================
+// 為什麼需要：
+//   EPUB 章節檔案常常使用「鬆散 HTML」語法（瀏覽器寬鬆解析），例如:
+//       <br>            <img src="x.jpg">             <hr>
+//   但本 reader 用 expat（嚴格 XML 解析器）來讀章節 HTML，
+//   碰到沒自閉的 void element 會丟「mismatched tag」錯誤，
+//   整個章節解析失敗 → 章節打不開 / 大書點目錄崩潰。
+//
+// 解法：parser 處理章節前，先 stream 過一次原檔，把
+//   <br>           → <br/>
+//   <img src="x">  → <img src="x"/>
+//   <hr>           → <hr/>
+// 等 void element 補上自閉斜線，然後丟給 expat 就能順利解析。
+//
+// 設計重點：
+//   1. 純文字 → 一字節一字節寫出（在 tag 外維持原樣）
+//   2. 進入 '<' → 切到 IN_TAG 狀態，記錄 tag 名稱
+//   3. tag 名稱結束（遇到空白/'/'/'>'）→ 判斷是不是 void element
+//   4. 遇到 '>' 收尾，若是 void element 且尚未 self-close → 補 '/'
+//   5. 跳過 <! ... > 與 <? ... ?>（comment / DOCTYPE / PI / CDATA）
+//   6. 雙重 buffer 一次 1024 byte，省 SD IO 次數（風眼用 512，我加倍）
+// =====================================================================
+namespace {
+
+constexpr int kHtmlPreprocessBufBytes = 1024;
+constexpr int kHtmlMaxTagNameLen = 32;
+
+// HTML5 規範定義的 void element 清單（不能有結束標籤的元素）。
+// ref: https://html.spec.whatwg.org/multipage/syntax.html#void-elements
+const char* const kHtmlVoidElements[] = {
+    "area", "base",  "br",     "col",    "embed", "hr",  "img",
+    "input", "link", "meta",   "param",  "source", "track", "wbr"};
+constexpr size_t kHtmlVoidElementCount = sizeof(kHtmlVoidElements) / sizeof(kHtmlVoidElements[0]);
+
+bool isHtmlVoidElementName(const char* name, int len) {
+  for (size_t i = 0; i < kHtmlVoidElementCount; ++i) {
+    const char* candidate = kHtmlVoidElements[i];
+    int candidateLen = static_cast<int>(strlen(candidate));
+    if (candidateLen == len && strncasecmp(name, candidate, len) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// 預處理 HTML 檔案：把 src 路徑的檔案讀進來，補完 void element 自閉斜線後寫到 dst。
+// 失敗時 dst 內容可能不完整（呼叫端應檢查回傳值並清掉殘留檔）。
+bool selfCloseVoidElementsInHtmlFile(const std::string& src, const std::string& dst) {
+  FsFile inFile, outFile;
+  if (!SdMan.openFileForRead("SCT", src, inFile)) {
+    return false;
+  }
+  if (!SdMan.openFileForWrite("SCT", dst, outFile)) {
+    inFile.close();
+    return false;
+  }
+
+  uint8_t inBuf[kHtmlPreprocessBufBytes];
+  uint8_t outBuf[kHtmlPreprocessBufBytes];
+  int outLen = 0;
+
+  // 解析狀態
+  enum class ScanState { OutsideTag, InsideTag };
+  ScanState scanState = ScanState::OutsideTag;
+
+  char tagName[kHtmlMaxTagNameLen] = {};
+  int tagNameLen = 0;
+  bool collectingTagName = false;
+  bool isClosingTag = false;        // </xxx>
+  bool currentTagIsVoid = false;
+  bool inDoctypeOrComment = false;  // <! ... >  或  <? ... ?>
+  char prevChar = 0;
+  bool ok = true;
+
+  // 寫一個 byte 到 outBuf；滿了就 flush
+  auto emitByte = [&](uint8_t b) -> bool {
+    outBuf[outLen++] = b;
+    if (outLen >= kHtmlPreprocessBufBytes) {
+      if (outFile.write(outBuf, kHtmlPreprocessBufBytes) != kHtmlPreprocessBufBytes) return false;
+      outLen = 0;
+    }
+    return true;
+  };
+
+  // tag 名稱結束的共用邏輯（不是 closing tag 才需要判斷 void）
+  auto finalizeTagName = [&]() {
+    if (collectingTagName && tagNameLen > 0) {
+      tagName[tagNameLen] = '\0';
+      if (!isClosingTag) {
+        currentTagIsVoid = isHtmlVoidElementName(tagName, tagNameLen);
+      }
+      collectingTagName = false;
+    }
+  };
+
+  while (ok) {
+    const int readLen = inFile.read(inBuf, kHtmlPreprocessBufBytes);
+    if (readLen <= 0) break;
+
+    for (int i = 0; i < readLen && ok; ++i) {
+      const char ch = static_cast<char>(inBuf[i]);
+
+      if (scanState == ScanState::OutsideTag) {
+        ok = emitByte(static_cast<uint8_t>(ch));
+        if (ch == '<') {
+          // 進入 tag，初始化所有狀態
+          scanState = ScanState::InsideTag;
+          tagNameLen = 0;
+          collectingTagName = true;
+          isClosingTag = false;
+          currentTagIsVoid = false;
+          inDoctypeOrComment = false;
+          prevChar = '<';
+        }
+        continue;
+      }
+
+      // scanState == InsideTag
+      if (ch == '>') {
+        finalizeTagName();
+        // 補 self-close：是 void、不是 doctype/註解、結尾不是 '/'
+        if (!inDoctypeOrComment && currentTagIsVoid && prevChar != '/') {
+          ok = emitByte('/');
+        }
+        if (ok) ok = emitByte('>');
+        scanState = ScanState::OutsideTag;
+        continue;
+      }
+
+      // 還在 tag 內
+      ok = emitByte(static_cast<uint8_t>(ch));
+      if (!ok) break;
+
+      if (collectingTagName) {
+        if (tagNameLen == 0 && ch == '/') {
+          // </xxx>
+          isClosingTag = true;
+        } else if (tagNameLen == 0 && (ch == '!' || ch == '?')) {
+          // <! ... > or <? ... ?> → 不要動內容
+          inDoctypeOrComment = true;
+          collectingTagName = false;
+        } else if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
+          finalizeTagName();
+        } else if (ch == '/') {
+          // 已經寫出 self-close 標記如 <br/> 中間的 '/'
+          finalizeTagName();
+        } else {
+          if (tagNameLen < kHtmlMaxTagNameLen - 1) {
+            tagName[tagNameLen++] = static_cast<char>(tolower(ch));
+          }
+        }
+      }
+      prevChar = ch;
+    }
+  }
+
+  // flush 剩餘 buffer
+  if (ok && outLen > 0) {
+    ok = (outFile.write(outBuf, outLen) == outLen);
+  }
+
+  inFile.close();
+  outFile.close();
+  return ok;
+}
+
+}  // namespace (HTML void-element preprocessor)
 
 namespace {
 constexpr uint8_t SECTION_FILE_VERSION = 13;
@@ -185,7 +356,29 @@ bool Section::createSectionFile(const int fontId, const float lineCompression, c
 
   Serial.printf("[%lu] [SCT] Streamed temp HTML to %s (%d bytes)\n", millis(), tmpHtmlPath.c_str(), fileSize);
 
+  // stage11: HTML 鬆散標籤自閉合補正
+  // 章節 HTML 常含未自閉的 <br>、<img>、<hr>，expat 嚴格 XML 會 reject 整個檔，
+  // 導致大書某些章節打不開（特別是網文目錄崩潰的根因）。先把 tmpHtml 過一遍補上自閉斜線，
+  // 再餵給 parser，相容鬆散 HTML 同時保留嚴格 XML 解析速度。
+  const auto tmpHtmlPrePath = epub->getCachePath() + "/.tmp_pre_" + std::to_string(spineIndex) + ".html";
+  if (SdMan.exists(tmpHtmlPrePath.c_str())) {
+    SdMan.remove(tmpHtmlPrePath.c_str());
+  }
+  const uint32_t prepStart = millis();
+  bool prepOk = selfCloseVoidElementsInHtmlFile(tmpHtmlPath, tmpHtmlPrePath);
+  const std::string& parserInputPath = prepOk ? tmpHtmlPrePath : tmpHtmlPath;
+  if (prepOk) {
+    Serial.printf("[%lu] [SCT] Self-closed void elements in %lu ms (using preprocessed file)\n",
+                  millis(), millis() - prepStart);
+  } else {
+    Serial.printf("[%lu] [SCT] Preprocess failed, falling back to raw HTML\n", millis());
+    if (SdMan.exists(tmpHtmlPrePath.c_str())) {
+      SdMan.remove(tmpHtmlPrePath.c_str());
+    }
+  }
+
   if (!SdMan.openFileForWrite("SCT", filePath, file)) {
+    if (prepOk) SdMan.remove(tmpHtmlPrePath.c_str());
     return false;
   }
   writeSectionFileHeader(fontId, lineCompression, extraParagraphSpacing, paragraphAlignment, viewportWidth,
@@ -199,14 +392,18 @@ bool Section::createSectionFile(const int fontId, const float lineCompression, c
 
 
   ChapterHtmlSlimParser visitor(
-      epub,tmpHtmlPath, renderer, fontId, lineCompression, extraParagraphSpacing, paragraphAlignment, viewportWidth,
+      epub,parserInputPath, renderer, fontId, lineCompression, extraParagraphSpacing, paragraphAlignment, viewportWidth,
       viewportHeight, hyphenationEnabled,wordSpacing,firstlineintented,
       [this, &lut](std::unique_ptr<Page> page) { lut.emplace_back(this->onPageComplete(std::move(page))); },
       embeddedStyle,contentBase, imageBasePath,  popupFn, embeddedStyle ? epub->getCssParser() : nullptr);
   Hyphenator::setPreferredLanguage(epub->getLanguage());
   success = visitor.parseAndBuildPages();
 
+  // stage11: 清理兩個 tmp（原始 + 預處理）
   SdMan.remove(tmpHtmlPath.c_str());
+  if (prepOk) {
+    SdMan.remove(tmpHtmlPrePath.c_str());
+  }
   if (!success) {
     Serial.printf("[%lu] [SCT] Failed to parse XML and build pages\n", millis());
     file.close();
