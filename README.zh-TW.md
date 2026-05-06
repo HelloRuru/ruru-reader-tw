@@ -18,7 +18,7 @@ jf-openhuninn 粉圓字型 · 完整藍芽修復 · 大書能開 · 內建書籤
 
 ## :brain: 這是什麼
 
-**閱星曈 X4** 是一款 ESP32-C3 電子書 reader，320KB RAM、16MB flash、無 PSRAM。原廠韌體（ChineseType）是給簡中使用者用的，內建一堆繁中讀者用不到的中國雲端服務。
+**閱星曈 X4** 是一款 ESP32-C3 電子書 reader，320KB RAM、16MB flash、無 PSRAM。
 
 這個 fork 把 X4 變成**適合繁中使用者**的閱讀器：
 
