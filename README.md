@@ -18,7 +18,7 @@ jf-openhuninn rounded font · full Bluetooth fixes · large-EPUB support · book
 
 ## :brain: What this is
 
-The **YueXingTong X4** (閱星曈 X4) is an ESP32-C3 e-reader with 320KB RAM, 16MB flash, no PSRAM. The stock firmware (ChineseType) is built for Simplified Chinese users and bundles services that Traditional Chinese readers don't need.
+The **YueXingTong X4** (閱星曈 X4) is an ESP32-C3 e-reader with 320KB RAM, 16MB flash, no PSRAM.
 
 This fork makes the X4 a great reader for **Traditional Chinese users**:
 
