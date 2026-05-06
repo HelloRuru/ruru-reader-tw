@@ -1,6 +1,10 @@
 MIT License
 
-Copyright (c) 2025 Dave Allie
+Copyright (c) 2026 HelloRuru (ruru-reader-tw modifications)
+Copyright (c) 2024 icannotttt (crosspoint-chinesetype upstream)
+Copyright (c) 2024 chintanvajariya (CrossInk-Carousel upstream)
+Copyright (c) 2024 uxjulia (CrossInk upstream)
+Copyright (c) 2025 Dave Allie (crosspoint-reader original)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+ADDITIONAL NOTICES
+
+This project includes the jf-openhuninn font (粉圓體) by justfont,
+licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+Source: <https://justfont.com/huninn/>
+
+Subset character data is generated under fair use for embedded display
+on resource-constrained devices. Attribution to justfont is preserved.

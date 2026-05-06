@@ -1,232 +1,155 @@
-# 版本信息
-第一次写固件，欢迎大家指导批评~ 可以的话点点star⭐，谢谢
+<h1 align="center">ruru-reader-tw</h1>
 
+<p align="center"><strong>Traditional Chinese firmware for the YueXingTong X4 e-reader.</strong><br>
+jf-openhuninn rounded font · full Bluetooth fixes · large-EPUB support · bookmarks</p>
 
-本项目大概三到四个迭代后就迎来收尾了，感谢支持
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-D4A5A5?style=flat-square" alt="MIT License">
+  <img src="https://img.shields.io/badge/platform-ESP32--C3-B8A9C9?style=flat-square" alt="ESP32-C3">
+  <img src="https://img.shields.io/badge/font-jf--openhuninn-A8B5A0?style=flat-square" alt="jf-openhuninn">
+  <img src="https://img.shields.io/badge/stage-12.6-E8B4B8?style=flat-square" alt="Stage 12.6">
+</p>
 
-基于 **crosspoint 1.0.0** 版本修改而来，主要为了适配中文读者，另外希望能够完成自己想要的一些小功能，感谢以下开源项目及其贡献者：
-
-- 参考改版项目：[crosspoint-reader](https://github.com/crosspoint-reader/crosspoint-reader)
-- 自选字体功能参考：[ruby-builds/crosspoint-reader (custom-fonts分支)](https://github.com/ruby-builds/crosspoint-reader/tree/feature/custom-fonts)
-- 字体制作工具：[ZYFDroid/crosspointcn-fontcreator](https://github.com/ZYFDroid/crosspointcn-fontcreator)
-- 蓝牙功能参考：[thedrunkpenguin/crosspoint-reader-ble](https://github.com/thedrunkpenguin/crosspoint-reader-ble)
-- 键盘QR输入:[QR_input](https://github.com/crosspoint-reader/crosspoint-reader/pull/839)
-
----
-
-# 重要！fork必读！
-为了激发crosspoint中文社区新生力量，我决定之后仍将开源，且不涉及商业部分。
-
-但是为了维护本人的基本利益以及捍卫开源项目的纯洁度，也为了避免之后纠纷，减少麻烦。希望大家使用我的固件改版的时候注明参考仓库，就像我下面一样。
-
-如果在小红书发布，请@allocate ，仅在第一次发布或者涉及我的功能的介绍的时候就可以，谢谢。
-
-
-为了便于大家分辨，我将按照贡献详细介绍我的主要改写部分：
-
-epub是改写的重要部分：
-
-epub中文阅读
-
-epub下划虚线
-
-epub阅读背景
-
-epub目录部分是基本重写的，增加对大epub的匹配，避免1000章以上内容打不开
-
-epub中文排版（字距调节 行距细化 首行缩进）
-
-epub快捷行距调节（长按确认键进入）
-
-xtc部分我基本重写了40%，原固件带来的压力太大，很多打不开：
-
-xtc xtch分块读取（原固件为单次读取全页）
-
-xtc流动读取（原固件无法打开很大的xtc）
-
-xtc封面重绘（原版本仅绘制1bit,我改为抖动，改善效果）
-
-txt部分比较少：
-
-txt分章节读取 txt章节目录
-
-其他独立部分：
-
-坚果云支持，包括开源阅读进度读取以及开源阅读书籍获取
-
-本地文件管理 打开 删除 复制 剪切 粘贴 搜索
-
-图片管理器（透明壁纸 阅读背景  自定义壁纸快捷设定 旋转 翻转操作），增加jpg png bmp适配
-
-最近阅读改为3*3图片选书 epub下方绘制阅读进度条
-
-
-蓝牙匹配后按键设定
-
-蓝牙广泛BLE支持（比较改版项目支持更多蓝牙设备）
-
-短按电源键：刷新 截屏
-
-键盘：QR部分增加wifi连接
-
-网页管理器修改，分批管理文件，减小打不开的频率，增加下载按钮以及下载功能
-
-还有其他一些乱七八糟的中文适配（opds部分文件识别和修改 字体部分修改 文件夹部分修改等等）
-
-如有其他会继续补充。本人非常欢迎也鼓励大家尝试改版，希望能以平等、和谐、友好的氛围，共同维护好crosspoint的中文固件，让这个固件在中国也能百花齐放！
-
-
-
+<p align="center">
+  <b>English</b> | <a href="README.zh-TW.md">繁體中文</a>
+</p>
 
 ---
 
-# 当前进度
+## :brain: What this is
 
-- **EPUB**：基本完成中文化适配
-- **XTC**：实现动态管理功能
-- **TXT**：目录解析逻辑如下：
-  - 优先按“第n章”格式提取目录
-  - 若无匹配目录或提取失败，则自动启用按字节分卷的兜底方案
+The **YueXingTong X4** (閱星曈 X4) is an ESP32-C3 e-reader with 320KB RAM, 16MB flash, no PSRAM. The stock firmware (ChineseType) is built for Simplified Chinese users and bundles services that Traditional Chinese readers don't need.
 
----
+This fork makes the X4 a great reader for **Traditional Chinese users**:
 
+- :sparkles: **jf-openhuninn rounded font** with full punctuation, digits, and Latin glyphs (11288 chars)
+- :wrench: **Four upstream Bluetooth crash bugs fixed** (RPA mishandling, vector-of-raw-pointers race, double-free on disconnect, blocking scan)
+- :detective: **NimBLE `getAddressType()` workaround** — Resolvable Private Addresses (RPA) were misreported as PUBLIC, causing 30s connect timeouts
+- :books: **Large-EPUB support** — books up to 15MB and 2752+ chapters now open
+- :anchor: **HTML void-element self-close pre-pass** — fixes the dreaded "tap chapter TOC and the reader freezes" bug on web novels
+- :bookmark: **Bookmarking system** with spine-aligned jump-to-bookmark
+- :art: **3×3 home grid** with cover art and progress bars
+- :globe_with_meridians: **Auto Simplified→Traditional conversion** via OpenCC `s2twp`
 
-# 阅读文本
-第一建议阅读中文书籍
+## :package: Installation
 
-本版本改善了本项目上一版的英文分词逻辑，但是效果仍不是很理想
+### 1. Choose a firmware
 
+Latest builds live in `release/`:
 
+| Build                    | Use case                                  | File                                       |
+| :----------------------- | :---------------------------------------- | :----------------------------------------- |
+| **Traditional Chinese**  | Daily driver (rounded font, punctuation)  | `ruru-reader-tw-stage12.6-20260505.bin`    |
+| **Simplified Chinese**   | Keep upstream cloud services              | `ruru-reader-cn-stageA-20260505.bin`       |
 
-## 一、刷机说明
+### 2. Flash via web (recommended)
 
-### 1.1 刷机准备
-- **TypeC 数据线**
-- **电脑**
+Open <https://flasher.crosspoint.world/> in **Chrome** (WebSerial required). Connect the X4 via USB-C, pick the BIN, click flash.
 
-### 1.2 刷机步骤
-1. 下载 Release 页面下的 bin 文件
-2. 打开网页：https://xteink.dve.al/
-3. 首次刷机建议备份官方固件：在 `full flash controls` 界面，选择 `save full flash`
-4. 在 `OTA fast flash controls` 部分选择下载好的 bin 文件，点击 `flash firmware from file`
-5. 先短按复位键（SD 卡附近），再长按电源键
+### 3. Or flash via ESPTool (CLI)
 
----
+```bash
+esptool.py --chip esp32c3 --port /dev/ttyUSB0 --baud 921600 \
+  write_flash -z 0x10000 release/ruru-reader-tw-stage12.6-20260505.bin
+```
 
-## 二、Epub 阅读
+### 4. First-boot setup
 
-### 2.1 注意事项
-首次进入 Epub 阅读需要缓存一段时间，请耐心等待。
+1. Power on
+2. Settings → Bluetooth → **Enable Bluetooth**
+3. Scan → pick your page-turner → Connect
+4. Subsequent boots auto-reconnect
 
-### 2.2 操作界面说明
-1. 进入阅读界面后，**短按确认键**进入菜单
-2. 菜单栏支持：目录、阅读方向、直达进度、进度同步（koreader 开源阅读）、清理缓存等
-3. 目录页面操作：
-   - 短按 `UP/DOWN`：菜单翻页
-   - 短按 `LEFT/RIGHT`：选项选择
-   - 长按 `LEFT/RIGHT`：菜单快速翻页
-4. 边距设置：
-   - 进入阅读界面后，**长按确认键**进入边距设置
-   - 短按/长按 `LEFT`：减少/增加左边距
-   - 短按/长按 `RIGHT`：减少/增加右边距
-   - 短按/长按 `UP`：减少/增加上边距
-   - 短按/长按 `DOWN`：减少/增加下边距
-   - 说明：边距设置在退出设置后生效，可通过黑框判断边距是否合适
-5. 翻页操作：
-   - 短按 `LEFT/UP`：上一页
-   - 短按 `RIGHT/DOWN`：下一页
-   - 长按 `LEFT/UP`：上一章
-   - 长按 `RIGHT/DOWN`：下一章
+> :information_source: When upgrading firmware, consider deleting `.crosspoint/` on the SD card to avoid stale chapter caches. Settings (BT state, fonts, margins) are preserved.
 
----
+## :wrench: Verified hardware
 
-## 三、XTC 格式说明
-本人不再继续适配 XTC 格式，目前仅支持 `xtc(1bit)` 和 `xtch(2bit)`。
-使用体验不如 Epub 和 TXT，建议优先使用后两者。
+### Bluetooth page-turners
 
-**菜单操作**：
-确认键进入目录，短按 `UP/DOWN` 翻页，短按 `LEFT/RIGHT` 选择，长按 `LEFT/RIGHT` 快速翻页。
+| Device       | Connect             | Page-turn                                | Notes                                                                    |
+| :----------- | :------------------ | :--------------------------------------- | :----------------------------------------------------------------------- |
+| iDal-10822   | :white_check_mark:  | :white_check_mark: keycode `0x4E`        | Daily driver                                                             |
+| E1 Control   | :white_check_mark:  | :white_check_mark: keycode `0x4B`        | Backup                                                                   |
+| HBTR003-XT   | :x:                 | —                                        | RPA instability (NimBLE / hardware limitation, not fixable in firmware)  |
 
----
+### Large EPUB compatibility
 
-## 四、TXT 阅读
-TXT 格式建议阅读带有「第 n 章」格式的文件，目录识别效果最佳。
+| Book                                 | Size      | Spine items | Open                | Page-turn           | Tap TOC             |
+| :----------------------------------- | :-------- | :---------- | :------------------ | :------------------ | :------------------ |
+| Web novel (no chapter index)         | 15 MB     | —           | :white_check_mark:  | :white_check_mark:  | :white_check_mark:  |
+| Multi-chapter web novel              | 10.25 MB  | 2752        | :white_check_mark:  | :white_check_mark:  | :white_check_mark:  |
 
-**菜单操作**：
-确认键进入目录，短按 `UP/DOWN` 翻页，短按 `LEFT/RIGHT` 选择，长按 `LEFT/RIGHT` 快速翻页。
+## :open_file_folder: Project structure
 
----
+```text
+ruru-reader-tw/
+├── lib/
+│   ├── Epub/                    # EPUB parser (Section, ChapterHtmlSlim, ParsedText)
+│   │   └── Epub/Section.cpp     # HTML void-element self-close pre-pass (the big fix)
+│   ├── hal/
+│   │   └── BluetoothHIDManager  # 4-way BT fix + RPA workaround + reconnect
+│   └── PngToBmpConverter/       # streaming PNG decoder (no OOM on big covers)
+├── src/
+│   ├── activities/
+│   │   ├── home/                # 3×3 grid recent books
+│   │   ├── reader/              # EpubReader, BookmarkActivity, EpubBookmarkSelection
+│   │   └── settings/            # BluetoothSettings (with _uiBluetoothActive flag)
+│   ├── components/
+│   │   └── icons/               # 12 new icons for grid view
+│   └── CrossPointSettings.cpp   # Bluetooth state persistence fix
+├── scripts/
+│   └── charsets/charset_full.txt  # 11288-char font subset (with punctuation)
+└── release/                     # Pre-built BINs (in .gitignore by default)
+```
 
-## 五、自定义字体
-1. 打开字体生成网站：https://epdfontweb.streamlit.app/
-   - 网站休眠时点击 `Yes, get this app back up!` 唤醒
-2. 上传 `ttf/otf` 格式字体，选择常用5000字/7000字，调整字号、字距、灰度后生成并下载
-3. 将生成的字体文件放入 `fonts/` 文件夹，**请勿使用特殊符号**，建议用中文/字母/数字命名
-4. 进入：设置 → 系统设置 → 设置自定义字体，选择需要的字体即可
+## :wrench: Customizing
 
----
+| Want to change              | Look at                                                                          |
+| :-------------------------- | :------------------------------------------------------------------------------- |
+| Font subset                 | `scripts/charsets/charset_full.txt` + run `lib/EpdFont/scripts/fontconvert.py`   |
+| Bluetooth keycodes          | `lib/hal/DeviceProfiles.cpp` (per-device profile)                                |
+| Reader menu items           | `src/activities/reader/EpubReaderMenuActivity.h`                                 |
+| Default theme               | `src/CrossPointSettings.h` `uiTheme` initializer                                 |
+| Skip auto-reconnect window  | `BluetoothHIDManager::_uiBluetoothActive` flag                                   |
 
-## 六、坚果云
-1. 在 设置 → 系统设置 中填写坚果云账号信息
-2. 返回主页，点击「坚果云」，联网后点击确认键可下载文件
-3. 下载的书籍保存在 SD 卡的 `坚果云/` 文件夹内
+## :bulb: Design rationale
 
----
+**Why fork at all?** Upstream ChineseType has the BLE manager UI commented out and bookshelf list-only — these are signals the upstream author knows there are issues but worked around them. We chose to actually fix the underlying bugs:
 
-## 七、开源阅读 App
-⚠️ 开源阅读 App **必须配置坚果云 WebDav** 才能使用同步功能。
+1. **NimBLE address-type heuristic** — read MAC byte 0 bits 7:6 instead of trusting `getAddressType()`. RPA addresses (`01`) become RANDOM, which the controller can actually find.
+2. **HTML pre-pass over expat** — instead of swapping XML parsers (huge change), we run a 1024-byte buffered state machine that auto-closes void elements. Adds ~3KB flash, parses 100KB chapters in under 50ms.
+3. **Bookmark spine+page** — store spine index + page count + progress percent; on jump, prefer spine when chapter count matches, fallback to percent. Survives layout reflow.
+4. **3×3 grid** — shows 9 covers per page instead of 5 list items. Better information density on a 480×800 e-ink panel.
 
-### 7.1 同步书籍
-1. 开源阅读 → 右上角三点 → 缓存/导出 → 离线缓存页面右上角三点
-2. 点击「导出到 WebDav」，选择导出格式为 `epub`，选择书籍导出
+## :pray: Acknowledgments
 
-### 7.2 同步阅读进度
-1. 开源阅读 → 我的 → 设置 → 备份与恢复 → 打开「同步阅读进度」
-2. 设备端：打开需要同步的 Epub → 确认键 → 进度同步（开源阅读）
-3. 配置 WiFi 后，可选择「下载云端进度」或「上传云端进度」
+This project stands on the shoulders of:
 
----
+| Upstream                                                                       | Author           | Contribution                                                       |
+| :----------------------------------------------------------------------------- | :--------------- | :----------------------------------------------------------------- |
+| [crosspoint-reader](https://github.com/daveallie/crosspoint-reader)            | Dave Allie       | Original MIT-licensed reader                                       |
+| CrossInk                                                                       | uxjulia          | Intermediate Chinese-friendly fork                                 |
+| CrossInk-Carousel                                                              | chintanvajariya  | UI theme system (Lyra / Flow / 3Covers)                            |
+| [crosspoint-chinesetype](https://github.com/icannotttt/crosspoint-chinesetype) | icannotttt       | Chinese localization, JianGuo cloud, KOReader sync, BLE skeleton   |
 
-## 八、图片选择器
-选择图片进入后，支持以下操作：
-- 设为阅读背景
-- 设为自定义睡眠屏
-- 设为透明壁纸
-- 旋转180度
-- 左右翻转
+Font: [jf-openhuninn](https://justfont.com/huninn/) by **justfont** — CC BY 4.0.
 
----
+Inspiration for the HTML self-close approach came from a parallel fork; implementation here is original.
 
-## 九、电源键操作
-**双击电源键**进入功能切换模式，可设置：
-- 忽略
-- 翻页
-- 全刷
-- 截屏
+## :scroll: Requirements
 
-截屏文件保存在 `screenshots/` 文件夹。
+- ESP32-C3 + 16MB flash + e-ink display (the X4 hardware)
+- A Bluetooth HID page-turner (or use the side buttons)
+- SD card for books and caches
 
----
+## :balance_scale: License
 
-## 十、文件管理器
-支持功能：打开、删除、复制、剪切、粘贴、搜索、退出搜索
-使用 `LEFT/RIGHT` 切换功能页面。
+Released under **MIT License**. See [LICENSE](LICENSE).
 
-1. **删除**：需要**长按确认键**，防止误删
-2. **复制/剪切**：操作后切换到目标目录，点击粘贴即可
-3. **搜索**：仅支持搜索 2 个汉字，依靠手机传输，找到后直接打开；无需使用时点击退出搜索
+This project inherits MIT from the upstream chain. All modifications are also MIT.
 
 ---
-## 十一、蓝牙功能
 
-
-仅支持HID蓝牙设备
-
-1.系统设置-bluetooth开启蓝牙并配对
-
-2. 配对完成后开始按键映射--点击确认键 按下一个按键作为上一页--点击确认键，按下一个按键作为下一页
-   
-3. 蓝牙休眠时间和系统休眠时间绑定
-   
-4. 如需要开机就使用蓝牙，先开启翻页器，再开机
----
+<p align="center">
+  <sub>Made by <a href="https://github.com/HelloRuru">HelloRuru</a> · 2026 · for Traditional Chinese readers</sub>
+</p>
