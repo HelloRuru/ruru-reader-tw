@@ -1,0 +1,11 @@
+{
+  "name": "PngToBmpConverter",
+  "description": "PNG cover -> 1-bit BMP thumbnail (補 ChineseType 原版只支援 JPG cover)",
+  "version": "1.0.0",
+  "build": {
+    "flags": []
+  },
+  "dependencies": {
+    "bitbank2/PNGdec": "^1.0.0"
+  }
+}
