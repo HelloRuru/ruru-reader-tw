@@ -44,7 +44,7 @@ jf-openhuninn 粉圓字型 · 完整藍芽修復 · 大書能開 · 內建書籤
 
 ### 2. 用網頁燒錄（推薦）
 
-用 **Chrome** 開 <https://flasher.crosspoint.world/>（需要 WebSerial）。USB-C 接 X4，選 BIN，按燒錄。
+用 **Chrome** 開 <[https://flasher.crosspoint.world/](https://xteink.dve.al/)>（需要 WebSerial）。USB-C 接 X4，選 BIN，選擇OTA部分燒錄。
 
 ### 3. 或用 ESPTool 命令列
 
