@@ -114,7 +114,7 @@ ruru-reader-tw/
 
 ## :bulb: 設計理念
 
-**為什麼要 fork？** 上游 ChineseType 把藍芽 UI 入口註解掉、書架只有清單視圖 — 這些是作者知道有問題但用迴避策略的訊號。我們選擇真正修底層 bug：
+**為什麼要 fork？** 
 
 1. **NimBLE 地址型別自判** — 從 MAC byte 0 bit 7:6 自己判，不信任 `getAddressType()`。RPA 地址（`01`）會被識別成 RANDOM，控制器才找得到。
 2. **expat 前先預處理 HTML** — 不換 XML parser（改動太大），改在前面跑 1024-byte 緩衝的 state machine 自動補 void element 自閉斜線。多 ~3KB flash，100KB 章節 < 50 ms 跑完。
