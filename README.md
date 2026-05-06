@@ -114,7 +114,7 @@ ruru-reader-tw/
 
 ## :bulb: Design rationale
 
-**Why fork at all?** Upstream ChineseType has the BLE manager UI commented out and bookshelf list-only — these are signals the upstream author knows there are issues but worked around them. We chose to actually fix the underlying bugs:
+**Why fork at all?** 
 
 1. **NimBLE address-type heuristic** — read MAC byte 0 bits 7:6 instead of trusting `getAddressType()`. RPA addresses (`01`) become RANDOM, which the controller can actually find.
 2. **HTML pre-pass over expat** — instead of swapping XML parsers (huge change), we run a 1024-byte buffered state machine that auto-closes void elements. Adds ~3KB flash, parses 100KB chapters in under 50ms.
