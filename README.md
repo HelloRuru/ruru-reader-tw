@@ -44,7 +44,7 @@ Latest builds live in `release/`:
 
 ### 2. Flash via web (recommended)
 
-Open <https://flasher.crosspoint.world/> in **Chrome** (WebSerial required). Connect the X4 via USB-C, pick the BIN, click flash.
+Open <[https://flasher.crosspoint.world/](https://xteink.dve.al/)> in **Chrome** (WebSerial required). Connect the X4 via USB-C, pick the BIN, click flash.
 
 ### 3. Or flash via ESPTool (CLI)
 
