@@ -42,19 +42,21 @@ SOFTWARE.
 --- PART 2: HELLORURU MODIFICATIONS (PolyForm Noncommercial 1.0.0) ---
 
 All new code and modifications authored by HelloRuru / Kaoru Tsai
-between 2026-04 and 2026-05 (covering stages 8 through 15.46) are
+between 2026-04 and 2026-05 (covering stages 8 through 15.48) are
 licensed under PolyForm Noncommercial License 1.0.0.
 
 Copyright (c) 2026 HelloRuru / Kaoru Tsai
 
-由 HelloRuru / 蔡依庭 在 2026 年 4 至 5 月間（stage 8 至 stage 15.46）
+由 HelloRuru / 蔡依庭 在 2026 年 4 至 5 月間（stage 8 至 stage 15.48）
 所撰寫的新增程式碼與修改，採用 PolyForm Noncommercial License 1.0.0
 授權。
 
 Covered modifications include, but are not limited to:
 
-    * Traditional Chinese UI localisation system
-    * jf-openhuninn font subsetting and bitmap generation pipeline
+    * Multilingual UI system (LanguageMapper.h, tri-language support)
+    * Source Han Sans TC font subsetting pipeline
+      (UI charset auto-extraction, common-7000 subset)
+    * jf-openhuninn legacy font subsetting and bitmap pipeline
     * Vertical writing layout rewrite (stage 15 series)
     * Large Book Mode: lazy TOC, streaming chapter cache,
       void-element HTML pre-pass
