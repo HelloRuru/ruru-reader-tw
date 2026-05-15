@@ -4,15 +4,22 @@
 jf-openhuninn rounded font · full Bluetooth fixes · large-EPUB support · bookmarks</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-MIT-D4A5A5?style=flat-square" alt="MIT License">
+  <img src="https://img.shields.io/badge/license-MIT_%2B_PolyForm_NC-D4A5A5?style=flat-square" alt="Dual License">
   <img src="https://img.shields.io/badge/platform-ESP32--C3-B8A9C9?style=flat-square" alt="ESP32-C3">
   <img src="https://img.shields.io/badge/font-jf--openhuninn-A8B5A0?style=flat-square" alt="jf-openhuninn">
-  <img src="https://img.shields.io/badge/stage-12.6-E8B4B8?style=flat-square" alt="Stage 12.6">
+  <img src="https://img.shields.io/badge/stage-15.46-E8B4B8?style=flat-square" alt="Stage 15.46">
 </p>
 
 <p align="center">
   <b>English</b> | <a href="README.zh-TW.md">繁體中文</a>
 </p>
+
+---
+
+> **Dual License Notice** — Upstream code is MIT (commercial use OK).
+> HelloRuru's stage 8–15.46 modifications are under PolyForm Noncommercial 1.0.0.
+> Commercial use of HelloRuru's work requires a separate license — contact <hello@helloruru.com>.
+> See [LICENSE](LICENSE) for full terms.
 
 ---
 
@@ -25,11 +32,14 @@ This fork makes the X4 a great reader for **Traditional Chinese users**:
 - :sparkles: **jf-openhuninn rounded font** with full punctuation, digits, and Latin glyphs (11288 chars)
 - :wrench: **Four upstream Bluetooth crash bugs fixed** (RPA mishandling, vector-of-raw-pointers race, double-free on disconnect, blocking scan)
 - :detective: **NimBLE `getAddressType()` workaround** — Resolvable Private Addresses (RPA) were misreported as PUBLIC, causing 30s connect timeouts
-- :books: **Large-EPUB support** — books up to 15MB and 2752+ chapters now open
+- :books: **Large Book Mode** — 10+ MB EPUBs with 2752+ chapters open in seconds (lazy TOC, streaming cache, no OOM)
 - :anchor: **HTML void-element self-close pre-pass** — fixes the dreaded "tap chapter TOC and the reader freezes" bug on web novels
+- :scroll: **Vertical writing layout** (stage 15) — proper column flow, no missing characters at page breaks
+- :art: **Custom font upload** — bring your own `.epdfont` bitmap fonts up to 48pt without overflow
 - :bookmark: **Bookmarking system** with spine-aligned jump-to-bookmark
-- :art: **3×3 home grid** with cover art and progress bars
+- :house: **3×3 home grid** with cover art and progress bars
 - :globe_with_meridians: **Auto Simplified→Traditional conversion** via OpenCC `s2twp`
+- :rabbit: **HelloRuru rabbit logo** + Common-7000 UI font subset (small flash footprint)
 
 ## :package: Installation
 
@@ -39,7 +49,7 @@ Latest builds live in `release/`:
 
 | Build                    | Use case                                  | File                                       |
 | :----------------------- | :---------------------------------------- | :----------------------------------------- |
-| **Traditional Chinese**  | Daily driver (rounded font, punctuation)  | `ruru-reader-tw-stage12.6-20260505.bin`    |
+| **Traditional Chinese**  | Daily driver (latest, all stage 15 fixes) | `ruru-reader-tw-stage15.46-20260515.bin`   |
 | **Simplified Chinese**   | Keep upstream cloud services              | `ruru-reader-cn-stageA-20260505.bin`       |
 
 ### 2. Flash via web (recommended)
@@ -50,7 +60,7 @@ Open <https://flasher.crosspoint.world/> in **Chrome** (WebSerial required). Con
 
 ```bash
 esptool.py --chip esp32c3 --port /dev/ttyUSB0 --baud 921600 \
-  write_flash -z 0x10000 release/ruru-reader-tw-stage12.6-20260505.bin
+  write_flash -z 0x10000 release/ruru-reader-tw-stage15.46-20260515.bin
 ```
 
 ### 4. First-boot setup
@@ -125,12 +135,13 @@ ruru-reader-tw/
 
 This project stands on the shoulders of:
 
-| Upstream                                                                       | Author           | Contribution                                                       |
-| :----------------------------------------------------------------------------- | :--------------- | :----------------------------------------------------------------- |
-| [crosspoint-reader](https://github.com/daveallie/crosspoint-reader)            | Dave Allie       | Original MIT-licensed reader                                       |
-| CrossInk                                                                       | uxjulia          | Intermediate Chinese-friendly fork                                 |
-| CrossInk-Carousel                                                              | chintanvajariya  | UI theme system (Lyra / Flow / 3Covers)                            |
-| [crosspoint-chinesetype](https://github.com/icannotttt/crosspoint-chinesetype) | icannotttt       | Chinese localization, JianGuo cloud, KOReader sync, BLE skeleton   |
+| Upstream                                                                                   | Author          | Contribution                                                          |
+| :----------------------------------------------------------------------------------------- | :-------------- | :-------------------------------------------------------------------- |
+| [crosspoint-reader](https://github.com/daveallie/crosspoint-reader)                        | Dave Allie      | Original MIT-licensed reader                                          |
+| CrossInk                                                                                   | uxjulia         | Intermediate Chinese-friendly fork                                    |
+| CrossInk-Carousel                                                                          | chintanvajariya | UI theme system (Lyra / Flow / 3Covers)                               |
+| [crosspoint-chinesetype](https://github.com/icannotttt/crosspoint-chinesetype)             | icannotttt      | Chinese localization, JianGuo cloud, KOReader sync, BLE skeleton      |
+| [crosspoint-chinesetype (SamLaio fork)](https://github.com/SamLaio/crosspoint-chinesetype) | SamLaio         | Parallel Traditional Chinese fork; inspired stage 15 vertical layout  |
 
 Font: [jf-openhuninn](https://justfont.com/huninn/) by **justfont** — CC BY 4.0.
 
@@ -142,11 +153,21 @@ Inspiration for the HTML self-close approach came from a parallel fork; implemen
 - A Bluetooth HID page-turner (or use the side buttons)
 - SD card for books and caches
 
-## :balance_scale: License
+## :balance_scale: License — Dual License
 
-Released under **MIT License**. See [LICENSE](LICENSE).
+This project uses a **dual-license model**. See [LICENSE](LICENSE) for full terms.
 
-This project inherits MIT from the upstream chain. All modifications are also MIT.
+| Code                                    | License                      | Commercial use                          |
+| :-------------------------------------- | :--------------------------- | :-------------------------------------- |
+| Upstream (Dave Allie, uxjulia, etc.)    | MIT                          | :white_check_mark: Allowed              |
+| HelloRuru modifications (stage 8–15.46) | PolyForm Noncommercial 1.0.0 | :x: Prohibited without separate license |
+| jf-openhuninn font (justfont)           | CC BY 4.0                    | :white_check_mark: With attribution     |
+
+**Free to use:** personal flashing, learning, research, non-profit, source modification & redistribution.
+
+**Commercial use of HelloRuru's modifications:** please contact <hello@helloruru.com> for licensing.
+
+Why dual license? The upstream MIT contributions must remain MIT (they were released that way). But the seven days of stage 15 work — vertical writing fixes, Large Book Mode, custom font system, charset subsetting, 3×3 grid — is original HelloRuru work that goes beyond the upstream baseline. The Noncommercial license lets individual readers flash freely while preventing commercial appropriation.
 
 ---
 

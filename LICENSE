@@ -1,10 +1,25 @@
-MIT License
+================================================================
+ruru-reader-tw — Dual License
+================================================================
 
-Copyright (c) 2026 HelloRuru (ruru-reader-tw modifications)
-Copyright (c) 2024 icannotttt (crosspoint-chinesetype upstream)
-Copyright (c) 2024 chintanvajariya (CrossInk-Carousel upstream)
-Copyright (c) 2024 uxjulia (CrossInk upstream)
-Copyright (c) 2025 Dave Allie (crosspoint-reader original)
+This project uses a DUAL LICENSE model.
+
+本專案採用「雙重授權」模式。
+
+--- PART 1: UPSTREAM CODE (MIT License) ---
+
+The following upstream contributions remain under the MIT License
+and may be freely used, copied, modified, and redistributed —
+including for commercial purposes.
+
+下列上游貢獻維持 MIT 授權，可自由使用、修改、再散布，
+包含商業用途。
+
+Copyright (c) 2024 icannotttt        (crosspoint-chinesetype upstream)
+Copyright (c) 2024 SamLaio           (crosspoint-chinesetype TW fork)
+Copyright (c) 2024 chintanvajariya   (CrossInk-Carousel upstream)
+Copyright (c) 2024 uxjulia           (CrossInk upstream)
+Copyright (c) 2025 Dave Allie        (crosspoint-reader original)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,13 +39,71 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
----
+--- PART 2: HELLORURU MODIFICATIONS (PolyForm Noncommercial 1.0.0) ---
 
-ADDITIONAL NOTICES
+All new code and modifications authored by HelloRuru / Kaoru Tsai
+between 2026-04 and 2026-05 (covering stages 8 through 15.46) are
+licensed under PolyForm Noncommercial License 1.0.0.
+
+Copyright (c) 2026 HelloRuru / Kaoru Tsai
+
+由 HelloRuru / 蔡依庭 在 2026 年 4 至 5 月間（stage 8 至 stage 15.46）
+所撰寫的新增程式碼與修改，採用 PolyForm Noncommercial License 1.0.0
+授權。
+
+Covered modifications include, but are not limited to:
+
+    * Traditional Chinese UI localisation system
+    * jf-openhuninn font subsetting and bitmap generation pipeline
+    * Vertical writing layout rewrite (stage 15 series)
+    * Large Book Mode: lazy TOC, streaming chapter cache,
+      void-element HTML pre-pass
+    * 3x3 home grid with cover art and progress bars
+    * Bookmark system with spine-aligned jump
+    * Bluetooth fixes: NimBLE getAddressType() workaround,
+      RPA handling, double-free on disconnect, blocking scan
+    * Custom font upload system (.epdfont format)
+    * Common-7000 character subset for UI fonts
+    * Rabbit logo and HelloRuru brand assets
+
+These modifications may be used freely for:
+
+    * Personal use (flashing your own device)
+    * Educational and research purposes
+    * Use by non-profit organisations
+    * Modification and redistribution of source code
+      (provided this license notice is preserved)
+
+Commercial use of HelloRuru's modifications is PROHIBITED without
+a separate commercial license. Commercial use includes, but is not
+limited to:
+
+    * Selling firmware that contains these modifications
+    * Including the firmware in a commercial product or service
+    * Using the firmware to provide a paid service
+    * Internal use by a for-profit organisation for revenue-generating
+      activities
+
+For commercial licensing enquiries, please contact:
+hello@helloruru.com
+
+Full license text:
+[PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)
+
+--- PART 3: ADDITIONAL NOTICES ---
 
 This project includes the jf-openhuninn font (粉圓體) by justfont,
 licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
-Source: <https://justfont.com/huninn/>
+Source: [justfont huninn](https://justfont.com/huninn/)
 
 Subset character data is generated under fair use for embedded display
 on resource-constrained devices. Attribution to justfont is preserved.
+
+--- PART 4: SUMMARY (白話版) ---
+
+    Upstream code (上游程式碼)         -> MIT — 可商用
+    HelloRuru modifications (我的修改) -> Noncommercial — 不可商用
+    Font (字型)                        -> CC BY 4.0 — 須標註 justfont
+
+Personal flashing, learning, sharing -> 永遠 OK
+Commercial use of HelloRuru's work   -> 請洽 <hello@helloruru.com>
