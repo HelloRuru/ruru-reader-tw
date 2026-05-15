@@ -464,6 +464,42 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     renderer.drawCenteredText(SMALL_FONT_ID, startY + LINE_SPACING * 5, "or scan QR code with your phone:");
   }
 
+  // stage15.6: WiFi 傳檔進度條 — 看 webServer 是否有上傳中或剛完成
+  if (webServer && webServer->isRunning()) {
+    const auto status = webServer->getWsUploadStatus();
+    const int pageWidth = renderer.getScreenWidth();
+    const int pageHeight = renderer.getScreenHeight();
+    const int barY = pageHeight - 110;  // 按鈕區上方
+    if (status.inProgress && status.total > 0) {
+      // 顯示「正在傳：filename」+ 進度條 + KB/total KB
+      std::string msg = "傳檔中：" + status.filename;
+      if (msg.length() > 40) msg.replace(37, msg.length() - 37, "...");
+      renderer.drawCenteredText(SMALL_FONT_ID, barY, msg.c_str(), true, EpdFontFamily::BOLD);
+      // 進度條
+      const int barW = pageWidth - 80;
+      const int barX = 40;
+      const int barH = 12;
+      const int fillW = static_cast<int>(static_cast<int64_t>(barW) * status.received / status.total);
+      renderer.drawRect(barX, barY + 20, barW, barH);
+      if (fillW > 2) renderer.fillRect(barX + 1, barY + 21, fillW - 2, barH - 2);
+      // 百分比 + KB
+      char info[64];
+      snprintf(info, sizeof(info), "%zu / %zu KB (%d%%)",
+               status.received / 1024, status.total / 1024,
+               static_cast<int>(100LL * status.received / status.total));
+      renderer.drawCenteredText(SMALL_FONT_ID, barY + 20 + barH + 6, info);
+    } else if (!status.lastCompleteName.empty() && status.lastCompleteAt > 0 &&
+               (millis() - status.lastCompleteAt) < 10000) {
+      // 10 秒內顯示「剛完成」
+      std::string msg = "已完成：" + status.lastCompleteName;
+      if (msg.length() > 40) msg.replace(37, msg.length() - 37, "...");
+      renderer.drawCenteredText(SMALL_FONT_ID, barY + 10, msg.c_str(), true, EpdFontFamily::BOLD);
+      char info[48];
+      snprintf(info, sizeof(info), "(%zu KB)", status.lastCompleteSize / 1024);
+      renderer.drawCenteredText(SMALL_FONT_ID, barY + 30, info);
+    }
+  }
+
   const auto labels = mappedInput.mapLabels("« Exit", "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }

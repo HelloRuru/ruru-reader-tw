@@ -46,10 +46,13 @@ class ClientCallbacks : public NimBLEClientCallbacks {
   }
   
   void onDisconnect(NimBLEClient* pClient, int reason) override {
-    Serial.printf("BT Client disconnected: %s (reason: %d)", pClient->getPeerAddress().toString().c_str(), reason);
-    if (g_instance) {
-      g_instance->onClientDisconnected(pClient->getPeerAddress().toString());
+    if (!g_instance || !g_instance->isEnabled()) {
+      Serial.printf("BT Client disconnected while Bluetooth is disabled; ignoring callback");
+      return;
     }
+
+    Serial.printf("BT Client disconnected: %s (reason: %d)", pClient->getPeerAddress().toString().c_str(), reason);
+    g_instance->onClientDisconnected(pClient->getPeerAddress().toString());
   }
 };
 
@@ -135,20 +138,24 @@ bool BluetoothHIDManager::disable() {
   }
   
   Serial.printf("BT Disabling Bluetooth...");
+  _enabled = false;
   
   if (_scanning) {
     stopScan();
   }
+
+  delay(500);
   
   // Disconnect all devices
   while (!_connectedDevices.empty()) {
     disconnectFromDevice(_connectedDevices[0].address);
   }
+
+  delay(200);
   
   // Deinitialize NimBLE stack
   NimBLEDevice::deinit(true);
   
-  _enabled = false;
   lastError = "";
   
   Serial.printf("BT Bluetooth disabled");

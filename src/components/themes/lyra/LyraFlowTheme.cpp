@@ -26,11 +26,14 @@
 #include "fontIds.h"
 
 namespace {
-constexpr int centerCoverWidth = 220;
-constexpr int centerCoverHeight = 320;
-constexpr int sideCoverWidth = 66;     // 30% of center
-constexpr int sideInnerHeight = 288;   // 90% of center — taller edge (toward middle)
-constexpr int sideOuterHeight = 256;   // 80% of center — shorter edge (away from middle)
+// stage15.25 (修正螢幕尺寸誤判):
+//   螢幕實際是 480×800 不是 480×540！之前佈局只用到 540 → 下方 260px 空白
+//   現在用真實 800px、cover 拉大 +25%（240→300）、整體有大量呼吸
+constexpr int centerCoverWidth = 210;
+constexpr int centerCoverHeight = 300;
+constexpr int sideCoverWidth = 62;
+constexpr int sideInnerHeight = 270;
+constexpr int sideOuterHeight = 240;
 constexpr int bookCornerRadius = 6;
 
 // Menu visuals — kept in sync with LyraTheme's anonymous-namespace constants
@@ -95,7 +98,12 @@ void LyraFlowTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const 
   }
 
   const int pageWidth = renderer.getScreenWidth();
-  const int centerY = rect.y + 40;
+  // stage15.25 (螢幕實際 800px、空間充裕):
+  //   書名 pill 從 rect.y+15、約佔 30
+  //   centerY = rect.y+80（書名跟封面之間呼吸 35px）
+  //   封面 300 → 結束 rect.y+380
+  //   brand 從 rect.y+420 開始（封面後呼吸 40px）
+  const int centerY = rect.y + 80;
   const int centerX = pageWidth / 2;
   const int count = static_cast<int>(recentBooks.size());
 
@@ -151,9 +159,17 @@ void LyraFlowTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const 
       }
     }
     if (!drawn) {
-      // Solid-black placeholder silhouette so the carousel still has shape.
-      renderer.fillRect(drawX, drawY, sideCoverWidth, hMax, true);
-      return;  // outline would be invisible against solid black anyway
+      // No cover — paint a trapezoidal silhouette so側邊書本還是有斜角輪廓
+      // 不再用矩形 + return，避免少了 perspective slant 像方塊蓋章。
+      const int topL_n = (hMax - hL) / 2;
+      const int topR_n = (hMax - hR) / 2;
+      const int botL_n = topL_n + hL - 1;
+      const int botR_n = topR_n + hR - 1;
+      const int rightX_n = drawX + sideCoverWidth - 1;
+      const int xs[4] = {drawX, rightX_n, rightX_n, drawX};
+      const int ys[4] = {drawY + topL_n, drawY + topR_n, drawY + botR_n, drawY + botL_n};
+      renderer.fillPolygon(xs, ys, 4, /*black=*/true);
+      return;  // 已經畫好梯形剪影
     }
     // 2px trapezoidal outline matching the perspective shape — keeps every
     // side book visibly framed so the center book reads as part of a row of
@@ -239,6 +255,47 @@ void LyraFlowTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const 
   }
 
   if (centerOpened) cf.close();
+  // stage15.22 (嚕寶重排版): 跳過下方 stage15.17/18/21 舊邏輯（LIBRARY CARD + 撕邊 + 蓋章）
+  //   走新版：書名 pill 在上、RURU-READER 黑底白字在下
+  if (false) {  // 舊邏輯關閉
+
+  // stage15.17: 中央書本上方加「LIBRARY CARD」圖書卡（借閱者表格感）
+  //             下方保留撕邊虛線
+  {
+    // 圖書卡：在中央封面正上方
+    const int cardW = actualCoverWidth + 20;  // 比封面稍寬
+    const int cardX = cX - 10;
+    const int cardH = 56;  // 圖書卡高度
+    const int cardY = actualY - cardH - 6;  // stage15.21: 從 -10 改 -6、讓 cardY 過守門
+    if (cardY >= rect.y) {  // stage15.21: 從 >rect.y+4 改 >=rect.y、放寬條件
+      // 卡片外框
+      renderer.drawRect(cardX, cardY, cardW, cardH, 2, true);
+      // 卡片頂部「LIBRARY CARD」標頭（黑底反白字）
+      const int headH = 16;
+      renderer.fillRect(cardX, cardY, cardW, headH, true);
+      const char* hdr = "LIBRARY CARD";
+      const int hdrW = renderer.getTextWidth(SMALL_FONT_ID, hdr);
+      const int hdrTH = renderer.getLineHeight(SMALL_FONT_ID);
+      renderer.drawText(SMALL_FONT_ID, cardX + (cardW - hdrW) / 2,
+                        cardY + (headH - hdrTH) / 2 + 1, hdr, /*black=*/false);
+      // 表格資訊區：兩行 — 「借閱者：嚕嚕」「借出日期：—」
+      const int infoY1 = cardY + headH + 6;
+      const int infoY2 = infoY1 + 16;
+      renderer.drawText(SMALL_FONT_ID, cardX + 8, infoY1, "借閱者：嚕嚕", true);
+      renderer.drawText(SMALL_FONT_ID, cardX + 8, infoY2, "借出日期：—", true);
+      // 中央分隔線（表格感）
+      renderer.drawLine(cardX + 8, infoY2 - 4, cardX + cardW - 8, infoY2 - 4, true);
+    }
+
+    // 撕邊虛線：在中央封面正下方
+    const int tearY = actualY + actualCoverHeight + 8;
+    if (tearY < rect.y + rect.height - 16) {
+      for (int dx = cX; dx < cX + actualCoverWidth - 6; dx += 8) {
+        const int segEnd = std::min(dx + 4, cX + actualCoverWidth);
+        renderer.drawLine(dx, tearY, segEnd, tearY, true);
+      }
+    }
+  }
 
   // --- Title above the center cover (filename, no extension) ---
   std::string filename = recentBooks[curIdx].title.empty() ? recentBooks[curIdx].path : recentBooks[curIdx].title;
@@ -249,31 +306,151 @@ void LyraFlowTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const 
     if (lastDot != std::string::npos && lastDot > 0) filename = filename.substr(0, lastDot);
   }
 
+  // stage15.18: 書名做成「黑底白字 + 圓角」票券感
+  //   嚕寶說「像票券一樣」、跟 LIBRARY CARD 黑底頭部風格統一
+  //   先量字寬、畫黑底矩形、再用 black=false 反白畫字
   const std::string truncatedTitle =
-      renderer.truncatedText(UI_12_FONT_ID, filename.c_str(), pageWidth - 40, EpdFontFamily::BOLD);
-  const int titleWidth = renderer.getTextWidth(UI_12_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::BOLD);
-  renderer.drawText(UI_12_FONT_ID, centerX - titleWidth / 2, rect.y - 5, truncatedTitle.c_str(), true,
-                    EpdFontFamily::BOLD);
+      renderer.truncatedText(UI_10_FONT_ID, filename.c_str(), pageWidth - 60, EpdFontFamily::BOLD);
+  const int titleWidth = renderer.getTextWidth(UI_10_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::BOLD);
+  const int titleH = renderer.getLineHeight(UI_10_FONT_ID);
+  const int titlePadX = 10;
+  const int titlePadY = 4;
+  const int titleBgW = titleWidth + titlePadX * 2;
+  const int titleBgH = titleH + titlePadY * 2;
+  const int titleBgX = centerX - titleBgW / 2;
+  const int titleBgY = rect.y - 8;
+  renderer.fillRoundedRect(titleBgX, titleBgY, titleBgW, titleBgH, 6, Color::Black);
+  renderer.drawText(UI_10_FONT_ID, titleBgX + titlePadX, titleBgY + titlePadY, truncatedTitle.c_str(),
+                    /*black=*/false, EpdFontFamily::BOLD);
 
-  // --- Per-book reading time, centered below the center cover. Mirrors the
-  //     reference Lua FlowTheme: "Xh Ym" in SMALL_FONT, 8 px under the cover.
-  //     Always rendered (even "0h 0m") so the layout is stable whether the
-  //     user has read the book or not. ---
-  char timeStr[16];
-  // ChineseType 沒有 BookReadingStats 系統，永遠顯示 0h 0m（改造移植：簡化掉閱讀時間）
+  // stage15.21: 嚕寶說「閱讀時間、中間區塊都沒看到」、把蓋章加回來
+  //   重排 cover 區後有空間（centerY=126、cover h=200、結束 326、menu 從 350 開始 → 中間 24px 給蓋章）
   (void)stats;
-  const uint32_t bookSeconds = 0;
-  const uint32_t hours = bookSeconds / 3600;
-  const uint32_t minutes = (bookSeconds % 3600) / 60;
-  snprintf(timeStr, sizeof(timeStr), "%uh %um", static_cast<unsigned>(hours), static_cast<unsigned>(minutes));
-  const int timeWidth = renderer.getTextWidth(SMALL_FONT_ID, timeStr);
-  const int timeY = centerY + centerCoverHeight + 8;
-  renderer.drawText(SMALL_FONT_ID, centerX - timeWidth / 2, timeY, timeStr, true);
+  const char* stampText = "HelloRuru 圖書館";
+  const int stampTextW = renderer.getTextWidth(SMALL_FONT_ID, stampText, EpdFontFamily::BOLD);
+  const int stampTextH = renderer.getLineHeight(SMALL_FONT_ID);
+  const int stampPadX = 14;
+  const int stampPadY = 3;
+  const int stampW = stampTextW + stampPadX * 2;
+  const int stampH = stampTextH + stampPadY * 2;
+  const int stampX = centerX - stampW / 2;
+  const int stampY = centerY + centerCoverHeight + 14;
+  // 雙層圓角框（蓋章感）
+  renderer.drawRoundedRect(stampX, stampY, stampW, stampH, 1, 10, true);
+  renderer.drawRoundedRect(stampX + 3, stampY + 3, stampW - 6, stampH - 6, 1, 7, true);
+  renderer.drawText(SMALL_FONT_ID, stampX + (stampW - stampTextW) / 2, stampY + stampPadY,
+                    stampText, true, EpdFontFamily::BOLD);
+  }  // end if(false) 舊邏輯
+
+  // ============================================================
+  // stage15.23 (嚕寶協調版): cover +25% + menu 置底
+  //   書名 SMALL pill 在上、cover 300 在中、RURU-READER SMALL 在下、menu 置底
+  //   字級用 SMALL_FONT_ID 省空間（書名跟 brand 都改 SMALL）
+  // ============================================================
+  (void)stats;
+
+  // 取書名
+  std::string filename = recentBooks[curIdx].title.empty() ? recentBooks[curIdx].path : recentBooks[curIdx].title;
+  if (recentBooks[curIdx].title.empty()) {
+    const size_t lastSlash = filename.find_last_of('/');
+    if (lastSlash != std::string::npos) filename = filename.substr(lastSlash + 1);
+    const size_t lastDot = filename.find_last_of('.');
+    if (lastDot != std::string::npos && lastDot > 0) filename = filename.substr(0, lastDot);
+  }
+
+  // 書名 UI_10 pill（cover 上方、800px 螢幕空間充裕、用大字級）
+  const std::string truncatedTitle =
+      renderer.truncatedText(UI_10_FONT_ID, filename.c_str(), pageWidth - 80, EpdFontFamily::BOLD);
+  const int titleWidth = renderer.getTextWidth(UI_10_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::BOLD);
+  const int titleH = renderer.getLineHeight(UI_10_FONT_ID);
+  const int titlePadX = 18;
+  const int titlePadY = 7;  // stage15.25: 大字級配大 padding
+  const int titleBgW = titleWidth + titlePadX * 2;
+  const int titleBgH = titleH + titlePadY * 2;
+  const int titleBgX = centerX - titleBgW / 2;
+  const int titleBgY = rect.y + 15;  // stage15.25: 頂部留更多呼吸
+  renderer.fillRoundedRect(titleBgX, titleBgY, titleBgW, titleBgH, 8, Color::Black);
+  renderer.drawText(UI_10_FONT_ID, titleBgX + titlePadX, titleBgY + titlePadY, truncatedTitle.c_str(),
+                    false, EpdFontFamily::BOLD);
+
+  // stage15.26: 嚕寶要把 RURU-READER / HAPPY READING! 那塊整段刪掉
+  //   首頁底部就只剩 menu、cover 下方乾淨
 }
 
 void LyraFlowTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount, int selectedIndex,
                                    const std::function<std::string(int index)>& buttonLabel,
                                    const std::function<UIIcon(int index)>& rowIcon) const {
+  // stage15.17 + 15.18: 改成 2x2 grid + icon
+  //   嚕寶要的 4 格：挑選一本書 / 最近閱讀 / Wifi / 設定（4 個主要功能）
+  //   每格佔半寬、上半畫 icon、下半畫文字、選中那格加圓角灰底
+  //   stage15.18: HomeActivity 給的 rect.height 算錯（會超出螢幕），自己 clamp
+  if (buttonCount >= 4) {
+    const int gridCols = 2;
+    const int gridRows = 2;
+    const int gap = 8;
+    const int sidePad = 24;
+    const int topOffset = 0;   // stage15.24: 拿掉內部 topOffset、menu 完全置底
+    constexpr int iconSize = 32;
+    constexpr int iconLabelGap = 4;
+
+    // 算可用空間：用螢幕高度減 rect.y 減底部按鈕提示區（40）當實際可用範圍
+    // 避免 HomeActivity 給的 rect.height 算錯導致 cell 超出螢幕
+    const int screenH = renderer.getScreenHeight();
+    const int bottomReserve = 10;  // stage15.20: ButtonHints 拿掉了、底部只留 10px 邊距
+    const int gridStartY = rect.y + topOffset;  // 跟封面下緣的閱讀時間拉開呼吸距離
+    const int availableH = std::max(0, screenH - gridStartY - bottomReserve);
+    const int safeH = std::min(std::max(0, rect.height - topOffset), availableH);
+    if (safeH < 100) return;
+
+    const int cellW = (rect.width - sidePad * 2 - gap) / gridCols;
+    const int cellH = std::min(110, (safeH - gap) / gridRows);
+    // stage15.23 修：cellH 守門從 50 降到 35（嚕寶說 menu 一定夠放）
+    //   icon 縮成 24x24 + 文字緊貼 = 35 仍能畫
+    if (cellW < 60 || cellH < 35) return;
+
+    for (int i = 0; i < std::min(buttonCount, 4); ++i) {
+      const int col = i % 2;
+      const int row = i / 2;
+      const int cellX = rect.x + sidePad + col * (cellW + gap);
+      const int cellY = gridStartY + row * (cellH + gap);
+      const bool selected = (i == selectedIndex);
+
+      // stage15.20 (米蘭達選項 3: 底線無框):
+      //   拿掉 fillRoundedRect Color::LightGray、拿掉 drawRoundedRect 描邊
+      //   只用 icon + 文字、選中那格底下加 3px 粗黑線標記（如 navbar tab）
+      //   e-paper partial refresh 最快、去 AI 框框感
+
+      // icon + label 整組垂直置中
+      const int labelH = renderer.getLineHeight(UI_10_FONT_ID);
+      const int contentH = iconSize + iconLabelGap + labelH;
+      const int contentTop = cellY + (cellH - contentH) / 2;
+
+      if (rowIcon) {
+        const UIIcon icon = rowIcon(i);
+        const uint8_t* iconBitmap = lyraFlowMenuIcon(icon);
+        if (iconBitmap) {
+          const int iconX = cellX + (cellW - iconSize) / 2;
+          renderer.drawIcon(iconBitmap, iconX, contentTop, iconSize, iconSize);
+        }
+      }
+      const std::string labelStr = buttonLabel(i);
+      // 選中時字體加粗、強化辨識
+      const EpdFontFamily::Style labelStyle = selected ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
+      const int labelW = renderer.getTextWidth(UI_10_FONT_ID, labelStr.c_str(), labelStyle);
+      const int labelX = cellX + (cellW - labelW) / 2;
+      const int labelY = contentTop + iconSize + iconLabelGap;
+      renderer.drawText(UI_10_FONT_ID, labelX, labelY, labelStr.c_str(), true, labelStyle);
+
+      // 選中標記：文字下方 3px 粗黑短線（寬度=文字寬 + 4px 兩側 padding）
+      if (selected) {
+        const int markY = labelY + labelH + 2;
+        renderer.drawLine(labelX - 2, markY, labelX + labelW + 2, markY, 3, true);
+      }
+    }
+    return;
+  }
+
+  // buttonCount < 4 走原本 LyraFlow 分頁邏輯（保險 fallback）
   const auto& menuMetrics = UITheme::getInstance().getMetrics();
   const int rowStep = menuMetrics.menuRowHeight + menuMetrics.menuSpacing;
   // Reserve a thin strip at the bottom for page-indicator dots. Reserving

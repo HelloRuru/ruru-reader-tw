@@ -29,6 +29,7 @@ class PageLine final : public PageElement {
   std::shared_ptr<TextBlock> block;
   //加虚线
   void drawDashedLine(GfxRenderer& renderer, int x1, int y, int x2, bool isDark) const;
+  void drawVerticalDashedLine(GfxRenderer& renderer, int x, int y1, int y2, bool isDark) const;
 
  public:
   PageLine(std::shared_ptr<TextBlock> block, const int16_t xPos, const int16_t yPos)
@@ -37,6 +38,9 @@ class PageLine final : public PageElement {
   bool serialize(FsFile& file) override;
   PageElementTag getTag() const override { return TAG_PageLine; }
   static std::unique_ptr<PageLine> deserialize(FsFile& file);
+  // stage15.5: 直排排版用 — 給 Page::render 拿到整行純文字（避開橫排座標）
+  std::string getLineText() const { return block ? block->concatText() : ""; }
+  bool hasContent() const { return block != nullptr; }
 };
 // New PageImage class
 class PageImage final : public PageElement {

@@ -9,10 +9,11 @@
 #define NOTOSANS_14_FONT_ID (-1014561631)
 #define NOTOSANS_16_FONT_ID (-1422711852)
 #define NOTOSANS_18_FONT_ID (1237754772)
-#define OPENDYSLEXIC_8_FONT_ID (1331369208)
-#define OPENDYSLEXIC_10_FONT_ID (-1374689004)
-#define OPENDYSLEXIC_12_FONT_ID (-795539541)
-#define OPENDYSLEXIC_14_FONT_ID (-1676627620)
+// stage12.5: OpenDyslexic 字型砍掉（給閱讀障礙者用的英文字型、台灣不用）
+// stage15.2: 連 ID 也砍掉，這些 ID 已無實際引用
 #define UI_10_FONT_ID (-1246724383)
 #define UI_12_FONT_ID (-359249323)
 #define SMALL_FONT_ID (1073217904)
+// stage15.2: 17pt 書名專用字型（jfopenhuninn 粉圓、charset_full 11149 字）
+//            供 LibraryCard / LyraFlow / RecentBooks grid 顯示書名時使用
+#define READER_17_FONT_ID (901660977)

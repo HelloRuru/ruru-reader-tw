@@ -16,7 +16,7 @@ class Section {
 
   void writeSectionFileHeader(int fontId, float lineCompression, bool extraParagraphSpacing, uint8_t paragraphAlignment,
                               uint16_t viewportWidth, uint16_t viewportHeight, bool hyphenationEnabled,uint8_t wordSpacing, bool firstlineintented,
-                              bool embeddedStyle);
+                              bool embeddedStyle, bool verticalLayout);
   uint32_t onPageComplete(std::unique_ptr<Page> page);
 
  public:
@@ -29,11 +29,12 @@ class Section {
         renderer(renderer),
         filePath(epub->getCachePath() + "/sections/" + std::to_string(spineIndex) + ".bin") {}
   ~Section() = default;
+  // stage15.14: 加 verticalLayout 參數
   bool loadSectionFile(int fontId, float lineCompression, bool extraParagraphSpacing, uint8_t paragraphAlignment,
-                       uint16_t viewportWidth, uint16_t viewportHeight, bool hyphenationEnabled,uint8_t wordSpacing, bool firstlineintented, bool embeddedStyle);
+                       uint16_t viewportWidth, uint16_t viewportHeight, bool hyphenationEnabled,uint8_t wordSpacing, bool firstlineintented, bool embeddedStyle, bool verticalLayout);
   bool clearCache() const;
   bool createSectionFile(int fontId, float lineCompression, bool extraParagraphSpacing, uint8_t paragraphAlignment,
-                         uint16_t viewportWidth, uint16_t viewportHeight, bool hyphenationEnabled,uint8_t wordSpacing, bool firstlineintented, bool embeddedStyle,
+                         uint16_t viewportWidth, uint16_t viewportHeight, bool hyphenationEnabled,uint8_t wordSpacing, bool firstlineintented, bool embeddedStyle, bool verticalLayout,
                          const std::function<void()>& popupFn = nullptr);
   std::unique_ptr<Page> loadPageFromSectionFile();
 };

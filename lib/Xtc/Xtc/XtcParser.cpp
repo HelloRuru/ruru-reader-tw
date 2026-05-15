@@ -17,6 +17,12 @@
 
 namespace xtc {
 
+namespace {
+uint16_t lastPageIndex(uint16_t pageCount) {
+  return pageCount == 0 ? 0 : static_cast<uint16_t>(pageCount - 1);
+}
+}  // namespace
+
 XtcParser::XtcParser()
     : m_isOpen(false),
       m_defaultWidth(DISPLAY_WIDTH),
@@ -89,7 +95,7 @@ XtcError XtcParser::open(const char* filepath) {
     // 读取失败时创建默认章节，不退出
     m_chapters.clear();
     std::string chapterName = m_title.empty() ? "全书" : m_title;
-    ChapterInfo singleChapter{std::move(chapterName), 0, m_header.pageCount - 1};
+    ChapterInfo singleChapter{std::move(chapterName), 0, lastPageIndex(m_header.pageCount)};
     m_chapters.push_back(std::move(singleChapter));
     m_hasChapters = true;
   }
@@ -260,7 +266,7 @@ XtcError XtcParser::readChapters() {
   if (chapterOffset < sizeof(XtcHeader) || chapterOffset >= fileSize || chapterOffset + 96 > fileSize) {
     // 创建默认章节
     std::string chapterName = m_title.empty() ? "全书" : m_title;
-    ChapterInfo singleChapter{std::move(chapterName), 0, m_header.pageCount - 1};
+    ChapterInfo singleChapter{std::move(chapterName), 0, lastPageIndex(m_header.pageCount)};
     m_chapters.push_back(std::move(singleChapter));
     m_hasChapters = true;
     return XtcError::OK;
@@ -277,7 +283,7 @@ XtcError XtcParser::readChapters() {
 
   if (maxOffset <= chapterOffset) {
     std::string chapterName = m_title.empty() ? "全书" : m_title;
-    ChapterInfo singleChapter{std::move(chapterName), 0, m_header.pageCount - 1};
+    ChapterInfo singleChapter{std::move(chapterName), 0, lastPageIndex(m_header.pageCount)};
     m_chapters.push_back(std::move(singleChapter));
     m_hasChapters = true;
     return XtcError::OK;
@@ -300,7 +306,7 @@ XtcError XtcParser::readChapters() {
 
   // 内部默认章节
   std::string chapterName = m_title.empty() ? "全书" : m_title;
-  ChapterInfo singleChapter{std::move(chapterName), 0, m_header.pageCount - 1};
+  ChapterInfo singleChapter{std::move(chapterName), 0, lastPageIndex(m_header.pageCount)};
   m_chapters.push_back(std::move(singleChapter));
   m_hasChapters = !m_chapters.empty();
 

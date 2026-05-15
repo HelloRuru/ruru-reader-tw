@@ -3,6 +3,8 @@
 #include <GfxRenderer.h>
 #include <Serialization.h>
 
+#include "../../../../src/CrossPointSettings.h"
+
 void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int x, const int y) const {
   // Validate iterator bounds before rendering
   if (words.size() != wordXpos.size() || words.size() != wordStyles.size()) {
@@ -14,6 +16,29 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
   auto wordIt = words.begin();
   auto wordStylesIt = wordStyles.begin();
   auto wordXposIt = wordXpos.begin();
+  // stage15.14 (SAM 移植): 直排分支 — wordXpos 重用為 Y 座標、x 是欄中心
+  // stage15.15: 拿掉 getScreenHeight() break 條件
+  // stage15.18 修 bug: 用 drawVerticalText 不是 drawText
+  //   drawText 沒處理 Unicode 直排碼點對照（句號、逗號等標點直排版）
+  //   會造成標點位置不對 + 對不上原文
+  if (blockStyle.verticalLayout) {
+    // PageLine.xPos 是「欄中心 X」、drawVerticalText 要的是「欄左邊 X」
+    // colWidth = lineHeight（直排每字格寬 = 字級高）
+    const int colWidth = renderer.getLineHeight(fontId);
+    const int colLeft = x - colWidth / 2;
+    const int topInset = renderer.getVerticalTextTopInset(fontId);
+    for (size_t i = 0; i < words.size(); i++) {
+      const int drawY = y + *wordXposIt - topInset;  // 直排：wordXpos 存 Y；扣掉字形上方空白讓欄頂貼齊
+      const EpdFontFamily::Style currentStyle = *wordStylesIt;
+      // drawVerticalText 處理直排碼點對照 + 標點置中
+      // 每個 word 只有一個 codepoint、畫完不會推進到下一個（後面字座標由 wordYpos 控制）
+      renderer.drawVerticalText(fontId, colLeft, drawY, wordIt->c_str(), true, currentStyle);
+      std::advance(wordIt, 1);
+      std::advance(wordStylesIt, 1);
+      std::advance(wordXposIt, 1);
+    }
+    return;
+  }
   for (size_t i = 0; i < words.size(); i++) {
     const int wordX = *wordXposIt + x;
     const EpdFontFamily::Style currentStyle = *wordStylesIt;
@@ -22,8 +47,8 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
     if ((currentStyle & EpdFontFamily::UNDERLINE) != 0) {
       const std::string& w = *wordIt;
       const int fullWordWidth = renderer.getTextWidth(fontId, w.c_str(), currentStyle);
-      // y is the top of the text line; add ascender to reach baseline, then offset 2px below
-      const int underlineY = y + renderer.getFontAscenderSize(fontId) + 2;
+      // y is the top of the text line; add ascender to reach baseline, then apply reader setting offset.
+      const int underlineY = y + renderer.getFontAscenderSize(fontId) + SETTINGS.underlineBelowOffset;
 
       int startX = wordX;
       int underlineWidth = fullWordWidth;
@@ -45,6 +70,38 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
     std::advance(wordStylesIt, 1);
     std::advance(wordXposIt, 1);
   }
+}
+
+bool TextBlock::getHorizontalPixelBoundsY(const GfxRenderer& renderer, const int fontId, const int y, int* top,
+                                          int* bottom) const {
+  if (!top || !bottom || blockStyle.verticalLayout) {
+    return false;
+  }
+
+  auto wordIt = words.begin();
+  auto styleIt = wordStyles.begin();
+  int minY = 32767;
+  int maxY = -32768;
+  bool found = false;
+
+  while (wordIt != words.end() && styleIt != wordStyles.end()) {
+    int wordTop = 0;
+    int wordBottom = 0;
+    if (renderer.getTextPixelBoundsY(fontId, wordIt->c_str(), y, &wordTop, &wordBottom, *styleIt)) {
+      minY = std::min(minY, wordTop);
+      maxY = std::max(maxY, wordBottom);
+      found = true;
+    }
+    std::advance(wordIt, 1);
+    std::advance(styleIt, 1);
+  }
+
+  if (!found) {
+    return false;
+  }
+  *top = minY;
+  *bottom = maxY;
+  return true;
 }
 
 bool TextBlock::serialize(FsFile& file) const {
@@ -73,6 +130,8 @@ bool TextBlock::serialize(FsFile& file) const {
   serialization::writePod(file, blockStyle.paddingRight);
   serialization::writePod(file, blockStyle.textIndent);
   serialization::writePod(file, blockStyle.textIndentDefined);
+  // stage15.14: 直排支援
+  serialization::writePod(file, blockStyle.verticalLayout);
 
   return true;
 }
@@ -121,6 +180,8 @@ std::unique_ptr<TextBlock> TextBlock::deserialize(FsFile& file) {
   serialization::readPod(file, blockStyle.paddingRight);
   serialization::readPod(file, blockStyle.textIndent);
   serialization::readPod(file, blockStyle.textIndentDefined);
+  // stage15.14: 直排支援
+  serialization::readPod(file, blockStyle.verticalLayout);
 
   return std::unique_ptr<TextBlock>(
       new TextBlock(std::move(words), std::move(wordXpos), std::move(wordStyles), blockStyle));

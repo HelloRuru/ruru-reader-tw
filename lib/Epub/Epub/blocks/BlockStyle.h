@@ -22,6 +22,8 @@ struct BlockStyle {
   int16_t textIndent = 0;
   bool textIndentDefined = false;  // true if text-indent was explicitly set in CSS
   bool textAlignDefined = false;   // true if text-align was explicitly set in CSS
+  // stage15.14: SAM 移植直排支援 — 數據層只記 flag、render 時看這個切橫排/直排
+  bool verticalLayout = false;
 
   // Combined horizontal insets (margin + padding)
   [[nodiscard]] int16_t leftInset() const { return marginLeft + paddingLeft; }
@@ -37,6 +39,7 @@ struct BlockStyle {
     combinedBlockStyle.marginBottom = static_cast<int16_t>(child.marginBottom + marginBottom);
     combinedBlockStyle.marginLeft = static_cast<int16_t>(child.marginLeft + marginLeft);
     combinedBlockStyle.marginRight = static_cast<int16_t>(child.marginRight + marginRight);
+    combinedBlockStyle.verticalLayout = child.verticalLayout || verticalLayout;
 
     combinedBlockStyle.paddingTop = static_cast<int16_t>(child.paddingTop + paddingTop);
     combinedBlockStyle.paddingBottom = static_cast<int16_t>(child.paddingBottom + paddingBottom);

@@ -26,11 +26,15 @@ inline std::vector<SettingInfo> getSettingsList() {
                       "hideBatteryPercentage", "Display"),
     SettingInfo::Enum("重新整理頻率", &CrossPointSettings::refreshFrequency,
                       {"1 page", "5 pages", "10 pages", "15 pages", "30 pages"},"refreshFrequency","Display"),
-    SettingInfo::Enum("UI 主題", &CrossPointSettings::uiTheme, {"經典", "Lyra", "Flow 輪播", "三封面"},"UI Theme","Display"),
+    // stage15.11: 全部 theme 合併進 Flow（內含圖書館卡風裝飾）、UI 主題選單砍掉
     SettingInfo::Toggle("抗陽光褪色", &CrossPointSettings::fadingFix,"Sunlight Fading Compensation","Display"),
 
       // --- Reader ---
-      SettingInfo::Enum("字型", &CrossPointSettings::fontFamily, {"內建字型","內建字型", "內建字型", "自定義"}, "字型", "Reader"),
+      // stage15.32: 字型標籤誠實標示
+      //   3 個 enum 值（BOOKERLY/NOTOSANS/OPENDYSLEXIC）實際全部都綁同一個 jfopenhuninn 粉圓體
+      //   見 main.cpp:45-48 全用 jfopenhuninn_17_regular
+      //   FONT_CUSTOM 才是真的不同字型（從 SD 卡 .epdfont 載入）
+      SettingInfo::Enum("字型", &CrossPointSettings::fontFamily, {"粉圓", "粉圓", "粉圓", "自定義"}, "字型", "Reader"),
       SettingInfo::Enum("字號", &CrossPointSettings::fontSize, {"小", "中", "大", "特大"}, "字號", "Reader"),
     SettingInfo::Enum("行間距", &CrossPointSettings::lineSpacing,  {"Tight", "Normal", "Wide"}, "行間距", "Reader"),
     SettingInfo::Toggle("首行縮排", &CrossPointSettings::firstlineintented, "首行縮排","Reader"),
@@ -41,8 +45,19 @@ inline std::vector<SettingInfo> getSettingsList() {
     SettingInfo::Value("右邊距", &CrossPointSettings::screenMargin_Right, 0,40,5, "右邊距", "Reader"),
     SettingInfo::Toggle("閱讀背景", &CrossPointSettings::ReadingScreenEnabled,"閱讀背景","Reader"),
     SettingInfo::Toggle("劃線", &CrossPointSettings::extraline,"劃線","Reader"),
+    SettingInfo::Enum("橫排劃線位置", &CrossPointSettings::horizontalLinePosition,
+                      {"下方", "上方"}, "horizontalLinePosition", "Reader"),
+    SettingInfo::Value("下方劃線間距", &CrossPointSettings::underlineBelowOffset, 0,24,1, "underlineBelowOffset", "Reader"),
+    SettingInfo::Value("上方劃線間距", &CrossPointSettings::underlineAboveOffset, 0,24,1, "underlineAboveOffset", "Reader"),
+    SettingInfo::Value("直排劃線間距", &CrossPointSettings::verticalLineOffset, 0,24,1, "verticalLineOffset", "Reader"),
     SettingInfo::Enum("對齊方式", &CrossPointSettings::paragraphAlignment,
                       {"兩邊對齊", "左對齊", "居中", "右對齊", "書本樣式"}, "對齊方式", "Reader"),
+    // stage15.4: 直排支援
+    SettingInfo::Enum("文字排列", &CrossPointSettings::textLayout,
+                      {"橫排", "直排"}, "文字排列", "Reader"),
+    // stage15.32: 「直排翻頁反轉」拿掉、選項存在但無實裝（程式碼預留沒串接、開了沒效果、誤導使用者）
+    // SettingInfo::Toggle("直排翻頁反轉", &CrossPointSettings::verticalPageReverse,
+    //                     "直排翻頁反轉", "Reader"),
     SettingInfo::Toggle("是否使用書籍內嵌樣式", &CrossPointSettings::embeddedStyle,"是否使用書籍內嵌樣式","Reader"),
     SettingInfo::Toggle("連字元", &CrossPointSettings::hyphenationEnabled,"連字元","Reader"),
     SettingInfo::Enum("閱讀方向", &CrossPointSettings::orientation,

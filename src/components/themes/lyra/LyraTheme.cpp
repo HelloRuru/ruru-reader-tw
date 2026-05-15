@@ -9,6 +9,7 @@
 #include "Battery.h"
 #include "RecentBooksStore.h"
 #include "components/UITheme.h"
+#include "components/icons/cover.h"  // stage15.28: CoverIcon placeholder
 #include "fontIds.h"
 #include "util/StringUtils.h"
 
@@ -79,40 +80,45 @@ void LyraTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     renderer.drawText(UI_12_FONT_ID, rect.x + LyraMetrics::values.contentSidePadding,
                       rect.y + LyraMetrics::values.batteryBarHeight + 3, truncatedTitle.c_str(), true,
                       EpdFontFamily::BOLD);
-    renderer.drawLine(rect.x, rect.y + rect.height - 3, rect.x + rect.width, rect.y + rect.height - 3, 3, true);
+    // stage15.20 (借書卡感)：底部從單一粗線改成雙線（上 1px 細線 + 下 2px 粗線）
+    //   類似登記簿 header 的雙線分隔、跟首頁 LIBRARY CARD 雙圈呼應
+    renderer.drawLine(rect.x, rect.y + rect.height - 5, rect.x + rect.width, rect.y + rect.height - 5, 1, true);
+    renderer.drawLine(rect.x, rect.y + rect.height - 2, rect.x + rect.width, rect.y + rect.height - 2, 2, true);
   }
 }
 
 void LyraTheme::drawTabBar(const GfxRenderer& renderer, Rect rect, const std::vector<TabInfo>& tabs,
                            bool selected) const {
+  // stage15.20 (米蘭達方案 A 借書卡分類標籤):
+  //   拿掉整條 dither 灰底、拿掉選中黑底反白塊
+  //   改成「選中那個 tab 字變粗 + 下方 3px 黑線標記」、像書架掛的分類標籤
+  //   底下用 1+2px 雙線、跟 drawHeader 呼應
   int currentX = rect.x + LyraMetrics::values.contentSidePadding;
 
-  if (selected) {
-    renderer.fillRectDither(rect.x, rect.y, rect.width, rect.height, Color::LightGray);
-  }
-
   for (const auto& tab : tabs) {
-    const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, tab.label, EpdFontFamily::REGULAR);
+    const EpdFontFamily::Style tabStyle = tab.selected ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
+    const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, tab.label, tabStyle);
 
-    if (tab.selected) {
-      if (selected) {
-        renderer.fillRoundedRect(currentX, rect.y + 1, textWidth + 2 * hPaddingInSelection, rect.height - 4,
-                                 cornerRadius, Color::Black);
-      } else {
-        renderer.fillRectDither(currentX, rect.y, textWidth + 2 * hPaddingInSelection, rect.height - 3,
-                                Color::LightGray);
-        renderer.drawLine(currentX, rect.y + rect.height - 3, currentX + textWidth + 2 * hPaddingInSelection,
-                          rect.y + rect.height - 3, 2, true);
-      }
+    renderer.drawText(UI_10_FONT_ID, currentX + hPaddingInSelection, rect.y + 6, tab.label, true, tabStyle);
+
+    // 選中那個 tab：下方畫 3px 粗短線標記、僅當「整個 tabBar 是 focused」狀態才畫
+    if (tab.selected && selected) {
+      const int markY = rect.y + rect.height - 6;
+      renderer.drawLine(currentX + hPaddingInSelection, markY,
+                        currentX + hPaddingInSelection + textWidth, markY, 3, true);
+    } else if (tab.selected) {
+      // tabBar 未 focused 時、選中 tab 用 1px 細線（淡化）
+      const int markY = rect.y + rect.height - 6;
+      renderer.drawLine(currentX + hPaddingInSelection, markY,
+                        currentX + hPaddingInSelection + textWidth, markY, 1, true);
     }
-
-    renderer.drawText(UI_10_FONT_ID, currentX + hPaddingInSelection, rect.y + 6, tab.label, !(tab.selected && selected),
-                      EpdFontFamily::REGULAR);
 
     currentX += textWidth + LyraMetrics::values.tabSpacing + 2 * hPaddingInSelection;
   }
 
-  renderer.drawLine(rect.x, rect.y + rect.height - 1, rect.x + rect.width, rect.y + rect.height - 1, true);
+  // 底部雙線分隔（跟 drawHeader 呼應）
+  renderer.drawLine(rect.x, rect.y + rect.height - 3, rect.x + rect.width, rect.y + rect.height - 3, 1, true);
+  renderer.drawLine(rect.x, rect.y + rect.height - 1, rect.x + rect.width, rect.y + rect.height - 1, 1, true);
 }
 
 void LyraTheme::drawList(const GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
@@ -143,31 +149,54 @@ void LyraTheme::drawList(const GfxRenderer& renderer, Rect rect, int itemCount, 
   int contentWidth =
       rect.width -
       (totalPages > 1 ? (LyraMetrics::values.scrollBarWidth + LyraMetrics::values.scrollBarRightOffset) : 1);
-  if (selectedIndex >= 0) {
-    renderer.fillRoundedRect(LyraMetrics::values.contentSidePadding, rect.y + selectedIndex % pageItems * rowHeight,
-                             contentWidth - LyraMetrics::values.contentSidePadding * 2, rowHeight, cornerRadius,
-                             Color::LightGray);
-  }
+  // stage15.20 (米蘭達方案 A 借書卡): 拿掉整列灰底、選中那列改畫「‣」項目符號 + 左側 2px 黑短線
+  //   原本整列灰底（fillRoundedRect Color::LightGray）= AI app 風、跟借書登記簿感衝突
+  //   現在只在文字左側畫實心三角符號表示「選中這一項」、保留輕鬆閱讀感
 
   // Draw all items
   const auto pageStartIndex = selectedIndex / pageItems * pageItems;
   for (int i = pageStartIndex; i < itemCount && i < pageStartIndex + pageItems; i++) {
     const int itemY = rect.y + (i % pageItems) * rowHeight;
+    const bool isSelected = (i == selectedIndex);
+
+    // 借書登記簿格線：每列上緣畫 dotted line（每 8px 一點）
+    // 放在 itemY-1 = 上一列底邊、避開文字、視覺上是「列與列之間」的分隔
+    if (i > pageStartIndex) {
+      const int dotY = itemY - 1;
+      const int dotStartX = rect.x + LyraMetrics::values.contentSidePadding;
+      const int dotEndX = rect.x + contentWidth - LyraMetrics::values.contentSidePadding;
+      for (int dx = dotStartX; dx < dotEndX; dx += 8) {
+        renderer.drawPixel(dx, dotY);
+        renderer.drawPixel(dx + 1, dotY);
+      }
+    }
+
+    // 選中：左側畫「‣」實心三角（手寫登記感）+ 左邊 3px 粗短直線
+    if (isSelected) {
+      const int markX = rect.x + LyraMetrics::values.contentSidePadding;
+      const int markY = itemY + rowHeight / 2;
+      // 實心三角：3 個 fillRect 模擬
+      renderer.fillRect(markX, markY - 4, 2, 8, true);
+      renderer.fillRect(markX + 2, markY - 3, 2, 6, true);
+      renderer.fillRect(markX + 4, markY - 2, 2, 4, true);
+      renderer.fillRect(markX + 6, markY - 1, 2, 2, true);
+    }
 
     // Draw name
-    int textWidth = contentWidth - LyraMetrics::values.contentSidePadding * 2 - hPaddingInSelection * 2 -
-                    (rowValue != nullptr ? 60 : 0);  // TODO truncate according to value width?
+    // stage15.20: textX 左推 12 留給「‣」標記、textWidth 同步往內縮、避免跑版撞到 value 區
+    const int textX = rect.x + LyraMetrics::values.contentSidePadding + 12;
+    int textWidth = contentWidth - (textX - rect.x) - LyraMetrics::values.contentSidePadding -
+                    (rowValue != nullptr ? 60 : 0);
     auto itemName = rowTitle(i);
     auto item = renderer.truncatedText(UI_10_FONT_ID, itemName.c_str(), textWidth);
-    renderer.drawText(UI_10_FONT_ID, rect.x + LyraMetrics::values.contentSidePadding + hPaddingInSelection * 2,
-                      itemY + 6, item.c_str(), true);
+    renderer.drawText(UI_10_FONT_ID, textX, itemY + 6, item.c_str(), true,
+                      isSelected ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
 
     if (rowSubtitle != nullptr) {
-      // Draw subtitle
+      // Draw subtitle（跟標題對齊、同樣左推位置）
       std::string subtitleText = rowSubtitle(i);
       auto subtitle = renderer.truncatedText(SMALL_FONT_ID, subtitleText.c_str(), textWidth);
-      renderer.drawText(SMALL_FONT_ID, rect.x + LyraMetrics::values.contentSidePadding + hPaddingInSelection * 2,
-                        itemY + 30, subtitle.c_str(), true);
+      renderer.drawText(SMALL_FONT_ID, textX, itemY + 30, subtitle.c_str(), true);
     }
 
     if (rowValue != nullptr) {
@@ -192,6 +221,15 @@ void LyraTheme::drawList(const GfxRenderer& renderer, Rect rect, int itemCount, 
 
 void LyraTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
                                 const char* btn4) const {
+  // stage15.20: 嚕寶要求拿掉所有按鍵導航 UI（底部 hints + 右側 hints）
+  //   實體按鍵還在、只是不畫提示框 → 全部 activities 直接 no-op
+  (void)renderer;
+  (void)btn1;
+  (void)btn2;
+  (void)btn3;
+  (void)btn4;
+  return;
+  // ---- 以下保留原邏輯做為參考、不會執行 ----
   const GfxRenderer::Orientation orig_orientation = renderer.getOrientation();
   renderer.setOrientation(GfxRenderer::Orientation::Portrait);
 
@@ -224,6 +262,13 @@ void LyraTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
 }
 
 void LyraTheme::drawSideButtonHints(const GfxRenderer& renderer, const char* topBtn, const char* bottomBtn) const {
+  // stage15.20: 嚕寶要求拿掉所有畫面右邊的「向上 / 向下」提示鈕
+  //   實體按鍵還在、只是不畫提示框 → 全部 activities 直接 no-op
+  (void)renderer;
+  (void)topBtn;
+  (void)bottomBtn;
+  return;
+  // ---- 以下保留原邏輯做為參考、不會執行 ----
   const int screenWidth = renderer.getScreenWidth();
   constexpr int buttonWidth = LyraMetrics::values.sideButtonHintsWidth;  // Width on screen (height when rotated)
   constexpr int buttonHeight = 78;                                       // Height on screen (width when rotated)
@@ -259,82 +304,94 @@ void LyraTheme::drawSideButtonHints(const GfxRenderer& renderer, const char* top
   }
 }
 
+// stage15.28 (嚕寶要求 laird 首頁風):
+//   3 本書直列、每本一橫排：左大封面 + 右書名 + 作者
+//   選中那本整列灰底反白
+//   參考 laird/crosspoint-claw 首頁截圖
 void LyraTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                                     const int selectorIndex, bool& coverRendered, bool& coverBufferStored,
                                     bool& bufferRestored, std::function<bool()> storeCoverBuffer,
                                     const BookReadingStats* /*stats*/, float /*progressPercent*/) const {
-  const int tileWidth = (rect.width - 2 * LyraMetrics::values.contentSidePadding) / 3;
-  const int tileHeight = rect.height;
-  const int bookTitleHeight = tileHeight - LyraMetrics::values.homeCoverHeight - hPaddingInSelection;
-  const int tileY = rect.y;
-  const bool hasContinueReading = !recentBooks.empty();
+  if (recentBooks.empty()) return;
 
-  // Draw book card regardless, fill with message based on `hasContinueReading`
-  // Draw cover image as background if available (inside the box)
-  // Only load from SD on first render, then use stored buffer
-  if (hasContinueReading) {
-    if (!coverRendered) {
-      for (int i = 0; i < std::min(static_cast<int>(recentBooks.size()), LyraMetrics::values.homeRecentBooksCount);
-           i++) {
-        std::string coverPath = recentBooks[i].coverBmpPath;
-        bool hasCover = true;
-        int tileX = LyraMetrics::values.contentSidePadding + tileWidth * i;
-        if (coverPath.empty()) {
-          hasCover = false;
-        } else {
-          const std::string coverBmpPath = UITheme::getCoverThumbPath(coverPath, LyraMetrics::values.homeCoverHeight);
+  const int rowCount = std::min(static_cast<int>(recentBooks.size()), LyraMetrics::values.homeRecentBooksCount);
+  const int rowHeight = rect.height / rowCount;  // 每列平均分配高度
+  const int innerCoverH = rowHeight - hPaddingInSelection * 2;
+  const int coverWidthFixed = innerCoverH * 0.7;  // 書封寬高比約 0.7
+  const int tileWidth = rect.width - 2 * LyraMetrics::values.contentSidePadding;
 
-          // First time: load cover from SD and render
-          FsFile file;
-          if (SdMan.openFileForRead("HOME", coverBmpPath, file)) {
-            Bitmap bitmap(file);
-            if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-              float coverHeight = static_cast<float>(bitmap.getHeight());
-              float coverWidth = static_cast<float>(bitmap.getWidth());
-              float ratio = coverWidth / coverHeight;
-              const float tileRatio = static_cast<float>(tileWidth - 2 * hPaddingInSelection) /
-                                      static_cast<float>(LyraMetrics::values.homeCoverHeight);
-              float cropX = 1.0f - (tileRatio / ratio);
+  if (!coverRendered) {
+    for (int i = 0; i < rowCount; i++) {
+      const RecentBook& book = recentBooks[i];
+      const int tileX = LyraMetrics::values.contentSidePadding;
+      const int tileY = rect.y + i * rowHeight;
+      bool hasCover = false;
+      int actualCoverW = coverWidthFixed;
 
-              renderer.drawBitmap(bitmap, tileX + hPaddingInSelection, tileY + hPaddingInSelection,
-                                  tileWidth - 2 * hPaddingInSelection, LyraMetrics::values.homeCoverHeight, cropX);
-            } else {
-              hasCover = false;
+      if (!book.coverBmpPath.empty()) {
+        const std::string coverBmpPath = UITheme::getCoverThumbPath(book.coverBmpPath, innerCoverH);
+        FsFile file;
+        if (SdMan.openFileForRead("HOME", coverBmpPath, file)) {
+          Bitmap bitmap(file);
+          if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+            // 依書封實際寬高比縮放
+            const int bmpW = bitmap.getWidth();
+            const int bmpH = bitmap.getHeight();
+            if (bmpW > 0 && bmpH > 0) {
+              actualCoverW = std::min(coverWidthFixed, innerCoverH * bmpW / bmpH);
             }
-            file.close();
+            renderer.drawBitmap(bitmap, tileX + hPaddingInSelection, tileY + hPaddingInSelection,
+                                actualCoverW, innerCoverH);
+            hasCover = true;
           }
-        }
-
-        if (!hasCover) {
-          renderer.drawRect(tileX + hPaddingInSelection, tileY + hPaddingInSelection,
-                            tileWidth - 2 * hPaddingInSelection, LyraMetrics::values.homeCoverHeight);
+          file.close();
         }
       }
 
-      coverBufferStored = storeCoverBuffer();
-      coverRendered = true;
+      // cover 邊框
+      renderer.drawRect(tileX + hPaddingInSelection, tileY + hPaddingInSelection,
+                        actualCoverW, innerCoverH, true);
+
+      if (!hasCover) {
+        // 沒書封 placeholder
+        renderer.fillRect(tileX + hPaddingInSelection, tileY + hPaddingInSelection + innerCoverH / 3,
+                          actualCoverW, 2 * innerCoverH / 3, true);
+        renderer.drawIcon(CoverIcon, tileX + hPaddingInSelection + actualCoverW / 2 - 16,
+                          tileY + hPaddingInSelection + innerCoverH / 2 - 16, 32, 32);
+      }
+    }
+    coverBufferStored = storeCoverBuffer();
+    coverRendered = coverBufferStored;
+  }
+
+  // 第二輪：畫選中底色 + 書名 + 作者
+  for (int i = 0; i < rowCount; i++) {
+    const RecentBook& book = recentBooks[i];
+    const bool selected = (selectorIndex == i);
+    const int tileX = LyraMetrics::values.contentSidePadding;
+    const int tileY = rect.y + i * rowHeight;
+
+    if (selected) {
+      // 選中整列灰底（cover 區除外、不要蓋住書封）
+      renderer.fillRectDither(tileX + hPaddingInSelection + coverWidthFixed + LyraMetrics::values.verticalSpacing,
+                              tileY + hPaddingInSelection,
+                              tileWidth - hPaddingInSelection - coverWidthFixed - LyraMetrics::values.verticalSpacing,
+                              innerCoverH, Color::LightGray);
     }
 
-    for (int i = 0; i < std::min(static_cast<int>(recentBooks.size()), LyraMetrics::values.homeRecentBooksCount); i++) {
-      bool bookSelected = (selectorIndex == i);
+    const int textX = tileX + hPaddingInSelection + coverWidthFixed + LyraMetrics::values.verticalSpacing + 8;
+    const int textWidth = tileWidth - 2 * hPaddingInSelection - LyraMetrics::values.verticalSpacing - coverWidthFixed - 16;
 
-      int tileX = LyraMetrics::values.contentSidePadding + tileWidth * i;
-      auto title =
-          renderer.truncatedText(UI_10_FONT_ID, recentBooks[i].title.c_str(), tileWidth - 2 * hPaddingInSelection);
+    auto titleStr = renderer.truncatedText(UI_12_FONT_ID, book.title.c_str(), textWidth, EpdFontFamily::BOLD);
+    const int titleLineHeight = renderer.getLineHeight(UI_12_FONT_ID);
+    const int authorLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
+    const int blockH = book.author.empty() ? titleLineHeight : (titleLineHeight + authorLineHeight + 4);
+    int textY = tileY + (rowHeight - blockH) / 2;
+    renderer.drawText(UI_12_FONT_ID, textX, textY, titleStr.c_str(), true, EpdFontFamily::BOLD);
 
-      if (bookSelected) {
-        // Draw selection box
-        renderer.fillRoundedRect(tileX, tileY, tileWidth, hPaddingInSelection, cornerRadius, true, true, false, false,
-                                 Color::LightGray);
-        renderer.fillRectDither(tileX, tileY + hPaddingInSelection, hPaddingInSelection,
-                                LyraMetrics::values.homeCoverHeight, Color::LightGray);
-        renderer.fillRectDither(tileX + tileWidth - hPaddingInSelection, tileY + hPaddingInSelection,
-                                hPaddingInSelection, LyraMetrics::values.homeCoverHeight, Color::LightGray);
-        renderer.fillRoundedRect(tileX, tileY + LyraMetrics::values.homeCoverHeight + hPaddingInSelection, tileWidth,
-                                 bookTitleHeight, cornerRadius, false, false, true, true, Color::LightGray);
-      }
-      renderer.drawText(UI_10_FONT_ID, tileX + hPaddingInSelection,
-                        tileY + tileHeight - bookTitleHeight + hPaddingInSelection + 5, title.c_str(), true);
+    if (!book.author.empty()) {
+      auto author = renderer.truncatedText(UI_10_FONT_ID, book.author.c_str(), textWidth);
+      renderer.drawText(UI_10_FONT_ID, textX, textY + titleLineHeight + 4, author.c_str(), true);
     }
   }
 }

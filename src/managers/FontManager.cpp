@@ -177,7 +177,13 @@ CustomEpdFont* loadFontFile(const String& path) {
 
     is2Bit = (b8[6] != 0);
     advanceY = b8[8];
-    ascender = (int8_t)b8[9];
+    // stage15.33 (嚕寶長期修): V1 header 用 `header[9] = ascender & 0xFF` 截斷成 8-bit
+    //   fontconvert.py:396 寫 (ascender + 256) & 0xFF（負值補 256）
+    //   但 ascender 對 18pt+ 字體常常 > 127、用 (int8_t) 讀會變負值
+    //   → 文字 Y 座標 = y + ascender 變成 y - 56 → 跑出螢幕
+    //   修法：用 uint8_t 讀（0~255 範圍）、ascender 永遠正值（typographic_ascender 不會是負值）
+    //   descender 通常是負值（baseline 下方）、保留 int8_t cast 維持原行為
+    ascender = (uint8_t)b8[9];
     descender = (int8_t)b8[10];
 
     intervalCount = b8[12] | (b8[13] << 8) | (b8[14] << 16) | (b8[15] << 24);

@@ -65,50 +65,76 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
   bool showingLoading = false;
   Rect popupRect;
 
+  // stage15.25 (嚕寶要求：書本不用點進去也要先抓封面)
+  //   原本 if (!coverBmpPath.empty()) 才抓 → 沒點進去過的書永遠拿不到 coverBmpPath
+  //   現在改：不管 coverBmpPath 有沒有、只要 cache 不存在就主動 load epub 拿 metadata + 生 thumb
   int progress = 0;
   for (RecentBook& book : recentBooks) {
+    // 先看「已知 coverBmpPath」對應的 cache 在不在
+    bool needBuildThumb = true;
     if (!book.coverBmpPath.empty()) {
       std::string coverPath = UITheme::getCoverThumbPath(book.coverBmpPath, coverHeight);
-      if (!SdMan.exists(coverPath.c_str())) {
-        // If epub, try to load the metadata for title/author and cover
-        if (StringUtils::checkFileExtension(book.path, ".epub")) {
-          Epub epub(book.path, "/.crosspoint");
-          // Skip loading css since we only need metadata here
-          epub.load(false, true);
+      if (SdMan.exists(coverPath.c_str())) {
+        needBuildThumb = false;  // 已有 cache、不用建
+      }
+    }
 
-          // Try to generate thumbnail image for Continue Reading card
-          if (!showingLoading) {
-            showingLoading = true;
-            popupRect = GUI.drawPopup(renderer, "Loading...");
-          }
-          GUI.fillPopupProgress(renderer, popupRect, 10 + progress * (90 / recentBooks.size()));
-          bool success = epub.generateThumbBmp(coverHeight);
-          if (!success) {
-            RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
-            book.coverBmpPath = "";
-          }
-          coverRendered = false;
-          updateRequired = true;
-        } else if (StringUtils::checkFileExtension(book.path, ".xtch") ||
-                   StringUtils::checkFileExtension(book.path, ".xtc")) {
-          // Handle XTC file
-          Xtc xtc(book.path, "/.crosspoint");
-          if (xtc.load()) {
-            // Try to generate thumbnail image for Continue Reading card
-            if (!showingLoading) {
-              showingLoading = true;
-              popupRect = GUI.drawPopup(renderer, "Loading...");
-            }
-            GUI.fillPopupProgress(renderer, popupRect, 10 + progress * (90 / recentBooks.size()));
-            bool success = xtc.generateThumbBmp(coverHeight);
-            if (!success) {
-              RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
-              book.coverBmpPath = "";
-            }
-            coverRendered = false;
-            updateRequired = true;
-          }
+    if (!needBuildThumb) {
+      progress++;
+      continue;
+    }
+
+    // 進來表示：要嘛 coverBmpPath 空（沒點進去過）、要嘛 cache 不在
+    // 兩種狀況都要 load epub/xtc 拿 metadata + 生 thumb
+    if (StringUtils::checkFileExtension(book.path, ".epub")) {
+      Epub epub(book.path, "/.crosspoint");
+      epub.load(false, true);  // Skip CSS、只要 metadata
+
+      if (!showingLoading) {
+        showingLoading = true;
+        popupRect = GUI.drawPopup(renderer, "Loading...");
+      }
+      GUI.fillPopupProgress(renderer, popupRect, 10 + progress * (90 / recentBooks.size()));
+      bool success = epub.generateThumbBmp(coverHeight);
+      if (success) {
+        // 拿到 thumb 後、回寫 metadata 到 RECENT_BOOKS（含 coverBmpPath、title、author）
+        const std::string thumbPath = epub.getThumbBmpPath();
+        const std::string title = epub.getTitle();
+        const std::string author = epub.getAuthor();
+        RECENT_BOOKS.updateBook(book.path, title, author, thumbPath);
+        book.coverBmpPath = thumbPath;
+        if (!book.title.empty() && title.empty()) {
+          // 保留既有 title（避免 metadata 為空時清空）
+        } else if (!title.empty()) {
+          book.title = title;
+          book.author = author;
         }
+      } else {
+        RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
+        book.coverBmpPath = "";
+      }
+      coverRendered = false;
+      updateRequired = true;
+    } else if (StringUtils::checkFileExtension(book.path, ".xtch") ||
+               StringUtils::checkFileExtension(book.path, ".xtc")) {
+      Xtc xtc(book.path, "/.crosspoint");
+      if (xtc.load()) {
+        if (!showingLoading) {
+          showingLoading = true;
+          popupRect = GUI.drawPopup(renderer, "Loading...");
+        }
+        GUI.fillPopupProgress(renderer, popupRect, 10 + progress * (90 / recentBooks.size()));
+        bool success = xtc.generateThumbBmp(coverHeight);
+        if (success) {
+          const std::string thumbPath = xtc.getThumbBmpPath();
+          RECENT_BOOKS.updateBook(book.path, book.title, book.author, thumbPath);
+          book.coverBmpPath = thumbPath;
+        } else {
+          RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
+          book.coverBmpPath = "";
+        }
+        coverRendered = false;
+        updateRequired = true;
       }
     }
     progress++;
@@ -134,6 +160,14 @@ void HomeActivity::onEnter() {
 
   auto metrics = UITheme::getInstance().getMetrics();
   loadRecentBooks(metrics.homeRecentBooksCount);
+
+  // stage15.6: 封面預載 — 在 onEnter 階段就把 cover thumb 載 RAM
+  //            原本要等第一次 render 完才開始載、會看到「先空白、後跳出圖」的閃
+  //            預載後第一次 render 就直接畫出來
+  if (!recentBooks.empty()) {
+    recentsLoading = true;
+    loadRecentCovers(metrics.homeCoverHeight);
+  }
 
   // Trigger first update
   updateRequired = true;
@@ -273,30 +307,40 @@ void HomeActivity::render() {
                           recentBooks, selectorIndex, coverRendered, coverBufferStored, bufferRestored,
                           std::bind(&HomeActivity::storeCoverBuffer, this));
 
-  // Build menu items dynamically
+  // Build menu items dynamically (stage15.8: 加 menuIcons 對應、給選單畫 icon)
 std::vector<const char*> menuItems = {"挑選一本書", "最近閱讀"};
+std::vector<UIIcon> menuIcons = {UIIcon::Folder, UIIcon::Recent};
 
 if (hasOpdsUrl) {
     menuItems.push_back("OPDS 瀏覽器");
+    menuIcons.push_back(UIIcon::Library);
 }
 if (hasjianguoUrl) {
     menuItems.push_back("堅果雲");
+    menuIcons.push_back(UIIcon::Library);
 }
 
 
 menuItems.push_back("wifi功能");
+menuIcons.push_back(UIIcon::Wifi);
 menuItems.push_back("設定");
+menuIcons.push_back(UIIcon::Settings);
 
+  // stage15.25 (修正螢幕尺寸誤判 + 嚕寶要 menu 置底):
+  //   螢幕實際 800px、menu 緊接 cover tile 下方、貼螢幕真實底邊
+  //   menu 高度 = 螢幕剩餘空間 - 底部 10px 邊距
+  const int menuRectY = metrics.homeTopPadding + metrics.homeCoverTileHeight + 20;  // 緊接 cover 區、留 20px 呼吸
+  const int menuRectH = pageHeight - menuRectY - 10;
   GUI.drawButtonMenu(
       renderer,
-      Rect{0, metrics.homeTopPadding + metrics.homeCoverTileHeight + metrics.verticalSpacing, pageWidth,
-           pageHeight - (metrics.headerHeight + metrics.homeTopPadding + metrics.verticalSpacing * 2 +
-                         metrics.buttonHintsHeight)},
+      Rect{0, menuRectY, pageWidth, menuRectH},
       static_cast<int>(menuItems.size()), selectorIndex - recentBooks.size(),
-      [&menuItems](int index) { return std::string(menuItems[index]); }, nullptr);
+      [&menuItems](int index) { return std::string(menuItems[index]); },
+      [&menuIcons](int index) { return menuIcons[index]; });
 
-  const auto labels = mappedInput.mapLabels("", "選擇", "向上", "向下");
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  // stage15.20: 嚕寶不要底下「選擇 向上 向下」那排提示、首頁直接拿掉
+  // const auto labels = mappedInput.mapLabels("", "選擇", "向上", "向下");
+  // GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();
 

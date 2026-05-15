@@ -121,6 +121,16 @@ bool isCJKUnit(const std::string& unit) {
     // UTF-8中文/标点首字节范围：0xE0~0xEF
     return firstByte >= 0xE0 && firstByte <= 0xEF;
 }
+
+// stage15.14 (SAM 移植): UTF-8 codepoint byte 數
+size_t utf8CharLength(const unsigned char c) {
+  if (c < 0x80) return 1;
+  if ((c & 0xE0) == 0xC0) return 2;
+  if ((c & 0xF0) == 0xE0) return 3;
+  if ((c & 0xF8) == 0xF0) return 4;
+  return 1;
+}
+
 // 辅助函数：获取list中指定索引的元素（适配嵌入式环境）
 template <typename T>
 const T& getListElement(const std::list<T>& lst, size_t index) {
@@ -136,6 +146,9 @@ T& getListElement(std::list<T>& lst, size_t index) {
     std::advance(it, index);
     return *it;
 }
+
+int readerHorizontalSpacingPx(uint8_t wordSpacing);
+int readerVerticalSpacingPx(uint8_t wordSpacing);
 // ========== 工具函数结束 ==========
 
 }  // namespace
@@ -168,11 +181,9 @@ void ParsedText::layoutAndExtractLines(const GfxRenderer& renderer, const int fo
   const int pageWidth = viewportWidth;
   int spaceWidth = renderer.getSpaceWidth(fontId);
 
-  // 2. 仅左对齐时，使用SETTINGS里的字间距设置（核心修正：不重定义变量）
-  if (blockStyle.alignment == CssTextAlign::Left) {
-    // 修正：直接赋值给已定义的spaceWidth，而非重新定义int spaceWidth
-    spaceWidth = 1+(wordSpacing ) * 5;
-    //Serial.printf("左对齐字间距生效：wordSpacing=%d，最终spaceWidth=%d\n", wordSpacing, spaceWidth);
+  // 閱讀設定的字間距要同時影響左對齊與兩邊對齊；兩邊對齊會再把剩餘空間平均補滿。
+  if (blockStyle.alignment == CssTextAlign::Left || blockStyle.alignment == CssTextAlign::Justify) {
+    spaceWidth = readerHorizontalSpacingPx(wordSpacing);
   }
 
   // ========== 可选：如果需要中文强制spaceWidth=0，取消注释以下逻辑 ==========
@@ -686,4 +697,247 @@ void ParsedText::extractLine(const size_t breakIndex, const int pageWidth, const
 
   processLine(
       std::make_shared<TextBlock>(std::move(lineWords), std::move(lineXPos), std::move(lineWordStyles), blockStyle));
+}
+
+// stage15.21 (嚕寶 reflow 重做):
+//   做法改成「先讀完整段文章、再按直排規則重 tokenize、最後排版」
+//   原本直接拿橫排 words 拆 codepoint 排版 → 橫排分詞結果污染直排（英文字母被拆、空白規則不對）
+//   現在：
+//     Step 1: 把所有 words 串成 plain codepoint 流（保留每個 codepoint 的 style）
+//     Step 2: 按直排規則重 tokenize 成 verticalUnit（中文 1 字 = 1 unit、英文整詞 = 1 unit、數字成組 = 1 unit、標點 = 1 unit）
+//     Step 3: 把 verticalUnit 塞欄、每 unit 佔 1 個直排格高度
+//
+//   嚕寶說的「跳字」就是橫排空白被當分隔符、直排照搬空白規則時把空白跳過、變成視覺上缺字
+
+// 判斷 codepoint 屬於哪類型（直排專用）
+namespace {
+enum VerticalUnitType {
+  V_CJK,      // 中日韓字符（含全形標點）
+  V_ASCII_WORD,  // 英文字母組（連續英文當一個直排格）
+  V_DIGIT,    // 數字組（連續數字當一個直排格）
+  V_PUNCT,    // 半形標點
+  V_OTHER,
+};
+
+bool isCJKCodepoint(unsigned int c) {
+  // CJK Unified Ideographs (U+4E00..U+9FFF)
+  if (c >= 0x4E00 && c <= 0x9FFF) return true;
+  // CJK Unified Ideographs Extension A (U+3400..U+4DBF)
+  if (c >= 0x3400 && c <= 0x4DBF) return true;
+  // CJK 全形標點 (U+3000..U+303F)
+  if (c >= 0x3000 && c <= 0x303F) return true;
+  // 全形 ASCII (U+FF00..U+FFEF)
+  if (c >= 0xFF00 && c <= 0xFFEF) return true;
+  // 注音 (U+3100..U+312F)
+  if (c >= 0x3100 && c <= 0x312F) return true;
+  return false;
+}
+
+bool isAsciiAlpha(unsigned int c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+bool isAsciiDigit(unsigned int c) {
+  return c >= '0' && c <= '9';
+}
+
+bool isAsciiPunct(unsigned int c) {
+  return c < 0x80 && !isAsciiAlpha(c) && !isAsciiDigit(c) && c != ' ' && c != '\t' && c != '\n' && c != '\r';
+}
+
+int readerHorizontalSpacingPx(const uint8_t wordSpacing) {
+  return 1 + static_cast<int>(wordSpacing) * 5;
+}
+
+int readerVerticalSpacingPx(const uint8_t wordSpacing) {
+  return static_cast<int>(wordSpacing) * 2;
+}
+
+int verticalEffectiveCharHeight(const int fontLineHeight, const int visualHeight, const float lineCompression) {
+  const int compressedLineHeight = static_cast<int>(fontLineHeight * lineCompression);
+  const int adjusted = visualHeight + (compressedLineHeight - fontLineHeight);
+  return std::max(visualHeight, adjusted);
+}
+
+void applyVerticalAlignment(std::list<uint16_t>& ypos, const int lineHeight, const int charAdvance,
+                            const int viewportHeight, const CssTextAlign alignment, const bool allowJustify) {
+  if (ypos.empty() || lineHeight <= 0 || charAdvance <= 0 || viewportHeight <= lineHeight) {
+    return;
+  }
+
+  const int firstY = ypos.front();
+  const int lastY = ypos.back();
+  const int contentBottom = lastY + lineHeight;
+  const int spare = viewportHeight - contentBottom;
+  if (spare <= 0) {
+    return;
+  }
+
+  if (alignment == CssTextAlign::Center || alignment == CssTextAlign::Right) {
+    const int offset = alignment == CssTextAlign::Center ? spare / 2 : spare;
+    for (auto& y : ypos) {
+      y = static_cast<uint16_t>(std::min<int>(viewportHeight - lineHeight, y + offset));
+    }
+    return;
+  }
+
+  if (alignment == CssTextAlign::Justify && allowJustify && ypos.size() > 1) {
+    const int gapCount = static_cast<int>(ypos.size()) - 1;
+    int index = 0;
+    for (auto& y : ypos) {
+      y = static_cast<uint16_t>(firstY + index * charAdvance + (spare * index) / gapCount);
+      index++;
+    }
+  }
+}
+
+// 把 UTF-8 codepoint 解析出來、回傳 byte 數
+int decodeUtf8(const char* s, size_t maxLen, unsigned int& out) {
+  if (maxLen == 0) return 0;
+  const unsigned char c = static_cast<unsigned char>(s[0]);
+  if (c < 0x80) { out = c; return 1; }
+  if ((c & 0xE0) == 0xC0 && maxLen >= 2) {
+    out = (c & 0x1F) << 6 | (static_cast<unsigned char>(s[1]) & 0x3F);
+    return 2;
+  }
+  if ((c & 0xF0) == 0xE0 && maxLen >= 3) {
+    out = (c & 0x0F) << 12 | (static_cast<unsigned char>(s[1]) & 0x3F) << 6
+        | (static_cast<unsigned char>(s[2]) & 0x3F);
+    return 3;
+  }
+  if ((c & 0xF8) == 0xF0 && maxLen >= 4) {
+    out = (c & 0x07) << 18 | (static_cast<unsigned char>(s[1]) & 0x3F) << 12
+        | (static_cast<unsigned char>(s[2]) & 0x3F) << 6 | (static_cast<unsigned char>(s[3]) & 0x3F);
+    return 4;
+  }
+  out = c;
+  return 1;
+}
+}  // namespace
+
+void ParsedText::layoutAndExtractVerticalColumns(
+    const GfxRenderer& renderer, const int fontId, const uint16_t viewportHeight, const float lineCompression,
+    const std::function<void(std::shared_ptr<TextBlock>)>& processColumn,
+    VerticalColumnState* state) {
+  if (words.empty()) {
+    return;
+  }
+
+  const int fontLineHeight = renderer.getLineHeight(fontId);
+  const int lineHeight = verticalEffectiveCharHeight(fontLineHeight, renderer.getVerticalTextCellHeight(fontId),
+                                                     lineCompression);
+  const int charAdvance = lineHeight + readerVerticalSpacingPx(wordSpacing);
+  if (charAdvance <= 0 || viewportHeight < lineHeight) {
+    return;
+  }
+
+  // ===== Step 1: 把所有 words 串接成 codepoint 流 =====
+  // verticalUnits[i] = (UTF-8 字串, style)
+  // 把 words 全攤平、每個 codepoint 帶上原本 word 的 style
+  struct CpEntry {
+    std::string utf8;
+    EpdFontFamily::Style style;
+    unsigned int codepoint;
+  };
+  std::vector<CpEntry> codepoints;
+  codepoints.reserve(words.size() * 2);  // 預估容量
+
+  auto wordIt = words.begin();
+  auto styleIt = wordStyles.begin();
+  while (wordIt != words.end()) {
+    const std::string& word = *wordIt;
+    size_t pos = 0;
+    while (pos < word.size()) {
+      unsigned int cp = 0;
+      int len = decodeUtf8(word.c_str() + pos, word.size() - pos, cp);
+      if (len <= 0) { pos++; continue; }
+      CpEntry entry;
+      entry.utf8 = word.substr(pos, len);
+      entry.style = *styleIt;
+      entry.codepoint = cp;
+      codepoints.push_back(std::move(entry));
+      pos += len;
+    }
+    std::advance(wordIt, 1);
+    std::advance(styleIt, 1);
+  }
+
+  // ===== Step 2: 按直排規則重 tokenize 成 verticalUnit =====
+  // stage15.21 修：英文詞 / 數字組「合成 1 unit」會 layout 給 1 格 Y、但 drawVerticalText 內部
+  //   iterate codepoint 會把每個字母都往下推 lineHeight、結果一個英文詞佔多格、撞下個字 → 跑掉
+  //   改回「1 codepoint = 1 unit」、唯一保留的優化：空白跳過（直排不需要橫排空白）
+  struct VerticalUnit {
+    std::string utf8;
+    EpdFontFamily::Style style;
+  };
+  std::vector<VerticalUnit> units;
+  units.reserve(codepoints.size());
+
+  for (const auto& cpe : codepoints) {
+    const unsigned int cp = cpe.codepoint;
+    // 空白跳過、不形成 unit
+    if (cp == ' ' || cp == '\t' || cp == '\n' || cp == '\r') {
+      continue;
+    }
+    units.push_back({cpe.utf8, cpe.style});
+  }
+
+  // ===== Step 3: 把 units 塞欄 =====
+  VerticalColumnState localState;
+  VerticalColumnState* st = state ? state : &localState;
+  st->lineHeight = static_cast<uint16_t>(lineHeight);
+  st->charAdvance = static_cast<uint16_t>(charAdvance);
+  st->viewportHeight = viewportHeight;
+  st->alignment = blockStyle.alignment;
+  if (st->firstColumn && st->columnWords.empty() && firstlineintented) {
+    st->nextY = static_cast<uint16_t>(std::min(lineHeight * 2, static_cast<int>(viewportHeight - lineHeight)));
+  }
+
+  auto flushColumnLocal = [&](const bool allowJustify) {
+    if (st->columnWords.empty()) {
+      return;
+    }
+    applyVerticalAlignment(st->columnYpos, st->lineHeight, st->charAdvance, st->viewportHeight, st->alignment,
+                           allowJustify);
+    BlockStyle columnStyle = blockStyle;
+    columnStyle.verticalLayout = true;
+    processColumn(std::make_shared<TextBlock>(st->columnWords, st->columnYpos, st->columnStyles, columnStyle));
+    st->columnWords.clear();
+    st->columnYpos.clear();
+    st->columnStyles.clear();
+    st->nextY = 0;
+    st->firstColumn = false;
+  };
+
+  for (const auto& unit : units) {
+    if (st->nextY + lineHeight > viewportHeight) {
+      flushColumnLocal(true);
+    }
+    st->columnWords.push_back(unit.utf8);
+    st->columnYpos.push_back(st->nextY);
+    st->columnStyles.push_back(unit.style);
+    st->nextY = static_cast<uint16_t>(st->nextY + charAdvance);
+  }
+
+  // 沒傳 state（單段獨立用）才在最後 auto flush
+  if (!state) {
+    flushColumnLocal(false);
+  }
+}
+
+// stage15.16: caller 在所有段落 layout 完後呼叫、flush 殘餘 columnWords
+void ParsedText::flushVerticalColumnState(
+    VerticalColumnState* state, const BlockStyle& blockStyle,
+    const std::function<void(std::shared_ptr<TextBlock>)>& processColumn) {
+  if (!state || state->columnWords.empty()) return;
+  applyVerticalAlignment(state->columnYpos, state->lineHeight, state->charAdvance, state->viewportHeight,
+                         state->alignment, false);
+  BlockStyle columnStyle = blockStyle;
+  columnStyle.verticalLayout = true;
+  processColumn(std::make_shared<TextBlock>(state->columnWords, state->columnYpos, state->columnStyles, columnStyle));
+  state->columnWords.clear();
+  state->columnYpos.clear();
+  state->columnStyles.clear();
+  state->nextY = 0;
+  state->firstColumn = false;
 }

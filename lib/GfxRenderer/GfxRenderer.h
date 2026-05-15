@@ -114,6 +114,14 @@ class GfxRenderer {
                         EpdFontFamily::Style style = EpdFontFamily::REGULAR) const;
   void drawText(int fontId, int x, int y, const char* text, bool black = true,
                 EpdFontFamily::Style style = EpdFontFamily::REGULAR) const;
+  bool getTextPixelBoundsY(int fontId, const char* text, int y, int* top, int* bottom,
+                           EpdFontFamily::Style style = EpdFontFamily::REGULAR) const;
+  int getVerticalTextCellHeight(int fontId) const;
+  int getVerticalTextTopInset(int fontId) const;
+  // stage15.4: 直排文字 API（SAM 移植，支援 Unicode FE10-FE48 直排碼點 + fallback 繪製）
+  int getVerticalTextWidth(int fontId, const char* text, EpdFontFamily::Style style = EpdFontStyles::REGULAR) const;
+  void drawVerticalText(int fontId, int x, int y, const char* text, bool black = true,
+                        EpdFontFamily::Style style = EpdFontFamily::REGULAR) const;
   int getSpaceWidth(int fontId) const;
   int getTextAdvanceX(int fontId, const char* text) const;
   int getFontAscenderSize(int fontId) const;

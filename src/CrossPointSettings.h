@@ -92,6 +92,9 @@ class CrossPointSettings {
     BOOK_STYLE = 4,
     PARAGRAPH_ALIGNMENT_COUNT
   };
+  enum HORIZONTAL_LINE_POSITION { LINE_BELOW = 0, LINE_ABOVE = 1, HORIZONTAL_LINE_POSITION_COUNT };
+  // stage15.4: 文字排列方向（橫排 = 預設、直排 = 中文古書傳統，僅 reader 適用）
+  enum TEXT_LAYOUT { TEXT_HORIZONTAL = 0, TEXT_VERTICAL = 1, TEXT_LAYOUT_COUNT };
 
   // Auto-sleep timeout options (in minutes)
   enum SLEEP_TIMEOUT {
@@ -121,8 +124,10 @@ class CrossPointSettings {
 
   // UI Theme
   // stage5.5: 圓角 theme 暫時砍掉（選單空白 bug 還沒修），但保留 enum 值給之後修好加回來
-  // stage10: CLASSIC 砍掉（保留 enum 值避免破壞 settings 檔，但 UITheme.cpp 不再有 case，會 fallback 到 LYRA_FLOW）
-  enum UI_THEME { CLASSIC = 0, LYRA = 1, LYRA_FLOW = 2, LYRA_3COVERS = 3 };
+  // stage10: CLASSIC 砍掉（保留 enum 值避免破壞 settings 檔）
+  // stage15: LYRA / LYRA_3COVERS 砍掉，新增 LIBRARY_CARD（圖書館借書卡風）
+  //          保留所有舊 enum 值避免破壞舊 settings.bin，UITheme.cpp 沒 case 會 fallback 到 LYRA_FLOW
+  enum UI_THEME { CLASSIC = 0, LYRA = 1, LYRA_FLOW = 2, LYRA_3COVERS = 3, LIBRARY_CARD = 4 };
 
   // Sleep screen settings
   uint8_t sleepScreen = LIGHT;
@@ -158,6 +163,9 @@ class CrossPointSettings {
   uint8_t firstlineintented = 0;
   uint8_t wordSpacing = NORMAL;
   uint8_t paragraphAlignment = LEFT_ALIGN;
+  // stage15.4: 直排支援
+  uint8_t textLayout = TEXT_HORIZONTAL;
+  uint8_t verticalPageReverse = 0;  // 0 = 直排按鈕跟橫排一致，1 = 古書方向（左下右上）
   // Auto-sleep timeout setting (default 10 minutes)
   uint8_t sleepTimeout = SLEEP_10_MIN;
   // E-ink refresh frequency (default 15 pages)
@@ -185,6 +193,11 @@ char zlibEmail[64] = "";
 char zlibPassword[64] = "";
 //新加划线
 uint8_t extraline = 1;
+uint8_t underlineOffset = 2;  // 舊版共用劃線間距，保留給設定檔升級
+uint8_t underlineBelowOffset = 2;
+uint8_t underlineAboveOffset = 2;
+uint8_t verticalLineOffset = 2;
+uint8_t horizontalLinePosition = LINE_BELOW;
   // Bluetooth enabled state (persistent)
   uint8_t bluetoothEnabled = 0;
 

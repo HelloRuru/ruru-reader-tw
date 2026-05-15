@@ -6,6 +6,23 @@
 //gd
 #include "../../src/CrossPointSettings.h"
 
+namespace {
+int horizontalLineGap() {
+  const uint8_t value = SETTINGS.horizontalLinePosition == CrossPointSettings::LINE_ABOVE
+                            ? SETTINGS.underlineAboveOffset
+                            : SETTINGS.underlineBelowOffset;
+  return std::max(0, static_cast<int>(value));
+}
+
+int verticalLineGap() {
+  return std::max(0, static_cast<int>(SETTINGS.verticalLineOffset));
+}
+
+int keepInViewport(const int value, const int minValue, const int maxValue) {
+  return std::max(minValue, std::min(value, maxValue));
+}
+}  // namespace
+
 // gd:专门绘制水平虚线的函数（仅适配你的场景，参数：渲染器、起始X、Y、结束X、虚线段长/间隔）
 void PageLine::drawDashedLine(GfxRenderer& renderer, int x1, int y, int x2, bool isDark) const {
   int startX = std::min(x1, x2);
@@ -24,6 +41,21 @@ void PageLine::drawDashedLine(GfxRenderer& renderer, int x1, int y, int x2, bool
   }
 }
 
+void PageLine::drawVerticalDashedLine(GfxRenderer& renderer, int x, int y1, int y2, bool isDark) const {
+  int startY = std::min(y1, y2);
+  int endY = std::max(y1, y2);
+  int currentY = startY;
+
+  const int actualDash = 20;
+  const int actualGap = 10;
+
+  while (currentY < endY) {
+    int segmentEndY = std::min(currentY + actualDash, endY);
+    renderer.drawLine(x, currentY, x, segmentEndY, true);
+    currentY = segmentEndY + actualGap;
+  }
+}
+
 void PageLine::render(GfxRenderer& renderer, const int fontId, const int xOffset, const int yOffset) {
   block->render(renderer, fontId, xPos + xOffset, yPos + yOffset);
   //加线
@@ -39,10 +71,31 @@ void PageLine::render(GfxRenderer& renderer, const int fontId, const int xOffset
                                   &orientedMarginLeft);
   orientedMarginLeft += SETTINGS.screenMargin_Left;
   orientedMarginRight += SETTINGS.screenMargin_Right;
+  orientedMarginTop += SETTINGS.screenMargin_Top;
+  orientedMarginBottom += SETTINGS.screenMargin_Bottom;
   int viewportHeight = renderer.getScreenHeight() - orientedMarginTop - orientedMarginBottom;
+  if (block && block->getBlockStyle().verticalLayout) {
+    const int colLeft = (xPos + xOffset) - textHeight / 2;
+    const int lineX = colLeft - verticalLineGap() - 1;
+    drawVerticalDashedLine(renderer, lineX, orientedMarginTop, orientedMarginTop + viewportHeight, true);
+    return;
+  }
+
   int lineXStart = orientedMarginLeft; // 从屏幕最左侧开始
   int lineXEnd = screenWidth-orientedMarginRight; // 到屏幕最右侧结束
-  int lineY = (yPos + yOffset) + textHeight+2; // 在文字下方绘制，+2像素间距
+  const int lineGap = horizontalLineGap();
+  int textTop = 0;
+  int textBottom = 0;
+  const int textY = yPos + yOffset;
+  const bool hasGlyphBounds = block && block->getHorizontalPixelBoundsY(renderer, fontId, textY, &textTop, &textBottom);
+  int lineY = textY + textHeight + lineGap + 1;
+  if (hasGlyphBounds) {
+    lineY = textBottom + lineGap + 1;
+  }
+  if (SETTINGS.horizontalLinePosition == CrossPointSettings::LINE_ABOVE) {
+    lineY = hasGlyphBounds ? textTop - lineGap - 1 : textY - lineGap - 1;
+  }
+  lineY = keepInViewport(lineY, orientedMarginTop, orientedMarginTop + viewportHeight - 1);
 
   // 绘制全屏宽度的水平虚线
   drawDashedLine(renderer, lineXStart, lineY, lineXEnd, lineY);
@@ -176,6 +229,8 @@ void Page::render(GfxRenderer& renderer, const int fontId, const int xOffset, co
   // =============这里可加阅读背景================
   //renderPngSleepScreen(renderer);
 // ======================================
+  // 直排欄已在 ChapterHtmlSlimParser 建 page cache 時切好。
+  // 這裡只照 PageLine/TextBlock 的座標畫，避免換自定義字型後單頁二次重切吃掉頁尾文字。
   for (auto& element : elements) {
     element->render(renderer, fontId, xOffset, yOffset);
   }

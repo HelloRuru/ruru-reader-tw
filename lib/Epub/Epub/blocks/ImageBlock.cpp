@@ -1,7 +1,7 @@
 #include "ImageBlock.h"
 
 #include <GfxRenderer.h>
-#include <HardWareSerial.h>
+#include <HardwareSerial.h>
 #include <SDCardManager.h>
 #include <Serialization.h>
 

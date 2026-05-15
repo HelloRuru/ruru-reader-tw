@@ -215,6 +215,12 @@ void EpubReaderActivity::onEnter() {
   APP_STATE.saveToFile();
   RECENT_BOOKS.addBook(epub->getPath(), epub->getTitle(), epub->getAuthor(), epub->getThumbBmpPath());
 
+  // stage15.27 (嚕寶要求改回單章獨立、做法 A):
+  //   拿掉 stage15.21 全書 pre-scan、改回「進到該章節才建 cache」
+  //   避免一次跑 100+ 章把 ESP32-C3 記憶體吃滿、影響書封 thumb 生成
+  //   每章節進入時、loadSectionFile 失敗 → createSectionFile 才建（原本就有的邏輯）
+  // preScanAllChapters();  // 已停用
+
   // Trigger first update
   updateRequired = true;
 
@@ -377,6 +383,8 @@ void EpubReaderActivity::loop() {
       return;
     }
 
+    // stage15.14: 撤回 stage15.13 verticalConsumedPages 補丁
+    //             SAM 路徑下、ChapterHtmlSlimParser 已按直排切 Page、翻頁照舊 ++
     if (prevTriggered) {
       if (section->currentPage > 0) {
         section->currentPage--;
@@ -773,6 +781,30 @@ void EpubReaderActivity::renderScreen() {
     return;
   }
 
+  // stage15.30 + 15.31:
+  //   切字體 / 行距 / 字距後、section 必須 reset 重 layout、避免句子位置錯亂
+  //   每次 render 都 query SETTINGS 比對、不一致就 reset
+  //   為避免「開書不順」：lastRenderedFontId 從第一次 section 建好就要 cache 當前值
+  {
+    const int curFontId = SETTINGS.getReaderFontId();
+    const float curLineCompression = SETTINGS.getReaderLineCompression();
+    const uint8_t curWordSpacing = SETTINGS.wordSpacing;
+    if (section && lastRenderedFontId != -1 &&
+        (curFontId != lastRenderedFontId ||
+         curLineCompression != lastRenderedLineCompression ||
+         curWordSpacing != lastRenderedWordSpacing)) {
+      Serial.printf("[%lu] [ERS] Font/layout changed, reset section\n", millis());
+      cachedSpineIndex = currentSpineIndex;
+      cachedChapterTotalPageCount = section->pageCount;
+      nextPageNumber = section->currentPage;
+      section.reset();
+    }
+    // 每次 render 都更新 cache、確保 settings 改變後下次 render 偵測得到
+    lastRenderedFontId = curFontId;
+    lastRenderedLineCompression = curLineCompression;
+    lastRenderedWordSpacing = curWordSpacing;
+  }
+
   // edge case handling for sub-zero spine index
   if (currentSpineIndex < 0) {
     currentSpineIndex = 0;
@@ -826,16 +858,18 @@ void EpubReaderActivity::renderScreen() {
                   viewportWidth, viewportHeight, renderer.getScreenWidth(), renderer.getScreenHeight(),
                   orientedMarginLeft, orientedMarginRight, orientedMarginTop, orientedMarginBottom);
 
+    // stage15.14: 加 verticalLayout 參數、不同 textLayout 用不同 cache
+    const bool verticalLayout = (SETTINGS.textLayout == CrossPointSettings::TEXT_VERTICAL);
     if (!section->loadSectionFile(SETTINGS.getReaderFontId(), SETTINGS.getReaderLineCompression(),
                                   SETTINGS.extraParagraphSpacing, SETTINGS.paragraphAlignment, viewportWidth,
-                                  viewportHeight, SETTINGS.hyphenationEnabled,SETTINGS.wordSpacing,SETTINGS.firstlineintented, SETTINGS.embeddedStyle)) {
+                                  viewportHeight, SETTINGS.hyphenationEnabled,SETTINGS.wordSpacing,SETTINGS.firstlineintented, SETTINGS.embeddedStyle, verticalLayout)) {
       Serial.printf("[%lu] [ERS] Cache not found, building...\n", millis());
 
       const auto popupFn = [this]() { GUI.drawPopup(renderer, "Indexing..."); };
 
       if (!section->createSectionFile(SETTINGS.getReaderFontId(), SETTINGS.getReaderLineCompression(),
                                       SETTINGS.extraParagraphSpacing, SETTINGS.paragraphAlignment, viewportWidth,
-                                      viewportHeight, SETTINGS.hyphenationEnabled, SETTINGS.wordSpacing, SETTINGS.firstlineintented, SETTINGS.embeddedStyle, popupFn)) {
+                                      viewportHeight, SETTINGS.hyphenationEnabled, SETTINGS.wordSpacing, SETTINGS.firstlineintented, SETTINGS.embeddedStyle, verticalLayout, popupFn)) {
         Serial.printf("[%lu] [ERS] Failed to persist page data to SD\n", millis());
         section.reset();
         return;
@@ -930,9 +964,29 @@ void EpubReaderActivity::saveProgress(int spineIndex, int currentPage, int pageC
     Serial.printf("[ERS] Could not save progress!\n");
   }
 }
+// stage15.12: 直排跨 Page 拼字緩解「底部空白」
+//             嚕寶原則 8：上層 (EpubReader) 負責排版、底層 (Page) 不知道
+//             這個函式從 PageLine 收集文字、不真的呼叫 page->render
+std::string EpubReaderActivity::collectVerticalTextFromPage(const Page* page) {
+  if (!page) return "";
+  std::string result;
+  for (const auto& element : page->elements) {
+    if (!element || element->getTag() != TAG_PageLine) continue;
+    auto pl = static_cast<PageLine*>(element.get());
+    if (!pl->hasContent()) continue;
+    const std::string lineText = pl->getLineText();
+    if (lineText.empty()) continue;
+    result += lineText;
+  }
+  return result;
+}
+
 void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int orientedMarginTop,
                                         const int orientedMarginRight, const int orientedMarginBottom,
                                         const int orientedMarginLeft) {
+  // stage15.14: 移除 stage15.12-13 在 EpubReader 拼湊直排的補丁
+  //             改用 SAM 路徑、直排排版在 ParsedText/ChapterHtmlSlimParser 切 Page 階段就做好
+  //             page->render 自己看 BlockStyle.verticalLayout 走 TextBlock::render 直排分支
   auto applySettingMarginPreviewOverlay =
       [this, orientedMarginTop, orientedMarginRight, orientedMarginBottom, orientedMarginLeft]() {
     if (state != EPUBState::SETTING) {
@@ -1132,4 +1186,84 @@ void EpubReaderActivity::renderPngSleepScreen(GfxRenderer& renderer) const {
     return;
   }
   Serial.printf("[%lu] [SLP] Wallpaper PXC missing, skip reader background\n", millis());
+}
+
+// stage15.21 (嚕寶要求全書預讀):
+//   打開書時、跑迴圈把所有 spine 的 section cache 都建好
+//   loadSectionFile 會檢查 version + 設定、有 cache 就跳過、沒才建
+//   進度條每章更新一次、讓嚕寶看到「讀取全書中 X/Y 章」
+void EpubReaderActivity::preScanAllChapters() {
+  if (!epub) return;
+
+  const int spineCount = epub->getSpineItemsCount();
+  if (spineCount <= 0) return;
+
+  // 算 viewport（跟 renderScreen 同樣邏輯）
+  int orientedMarginTop = 0, orientedMarginRight = 0, orientedMarginBottom = 0, orientedMarginLeft = 0;
+  renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
+                                   &orientedMarginLeft);
+  auto metrics = UITheme::getInstance().getMetrics();
+  if (SETTINGS.statusBar != CrossPointSettings::STATUS_BAR_MODE::NONE) {
+    const bool showProgressBar = SETTINGS.statusBar == CrossPointSettings::STATUS_BAR_MODE::BOOK_PROGRESS_BAR ||
+                                 SETTINGS.statusBar == CrossPointSettings::STATUS_BAR_MODE::ONLY_BOOK_PROGRESS_BAR ||
+                                 SETTINGS.statusBar == CrossPointSettings::STATUS_BAR_MODE::CHAPTER_PROGRESS_BAR;
+    orientedMarginBottom += statusBarMargin +
+                            (showProgressBar ? (metrics.bookProgressBarHeight + progressBarMarginTop) : 0);
+  }
+  orientedMarginTop += SETTINGS.screenMargin_Top;
+  orientedMarginLeft += SETTINGS.screenMargin_Left;
+  orientedMarginRight += SETTINGS.screenMargin_Right;
+  orientedMarginBottom += SETTINGS.screenMargin_Bottom;
+
+  const uint16_t viewportWidth = renderer.getScreenWidth() - orientedMarginLeft - orientedMarginRight;
+  const uint16_t viewportHeight = renderer.getScreenHeight() - orientedMarginTop - orientedMarginBottom;
+  const bool verticalLayout = (SETTINGS.textLayout == CrossPointSettings::TEXT_VERTICAL);
+
+  // 顯示初始 popup
+  Rect popupRect = GUI.drawPopup(renderer, "讀取全書中...");
+  renderer.displayBuffer();
+
+  Serial.printf("[%lu] [ERS] Pre-scan: %d chapters\n", millis(), spineCount);
+  const uint32_t scanStart = millis();
+  int builtCount = 0;
+  int skippedCount = 0;
+
+  for (int i = 0; i < spineCount; ++i) {
+    // 更新進度條（每章更新）
+    const int percent = (i * 100) / spineCount;
+    GUI.fillPopupProgress(renderer, popupRect, percent);
+    renderer.displayBuffer();
+
+    // 建立 Section（純為了 cache 建立、不保留）
+    Section scanSection(epub, i, renderer);
+
+    // 嘗試 load 既有 cache、有就跳過
+    if (scanSection.loadSectionFile(SETTINGS.getReaderFontId(), SETTINGS.getReaderLineCompression(),
+                                    SETTINGS.extraParagraphSpacing, SETTINGS.paragraphAlignment, viewportWidth,
+                                    viewportHeight, SETTINGS.hyphenationEnabled, SETTINGS.wordSpacing,
+                                    SETTINGS.firstlineintented, SETTINGS.embeddedStyle, verticalLayout)) {
+      skippedCount++;
+      continue;
+    }
+
+    // 沒 cache、跑 createSectionFile
+    const auto noopPopup = []() {};  // pre-scan 自己有 popup、不要讓 createSectionFile 再開
+    if (!scanSection.createSectionFile(SETTINGS.getReaderFontId(), SETTINGS.getReaderLineCompression(),
+                                       SETTINGS.extraParagraphSpacing, SETTINGS.paragraphAlignment, viewportWidth,
+                                       viewportHeight, SETTINGS.hyphenationEnabled, SETTINGS.wordSpacing,
+                                       SETTINGS.firstlineintented, SETTINGS.embeddedStyle, verticalLayout, noopPopup)) {
+      Serial.printf("[%lu] [ERS] Pre-scan: chapter %d failed\n", millis(), i);
+      continue;
+    }
+    builtCount++;
+  }
+
+  const uint32_t elapsed = millis() - scanStart;
+  Serial.printf("[%lu] [ERS] Pre-scan done: %d built, %d skipped, %lu ms\n",
+                millis(), builtCount, skippedCount, elapsed);
+
+  // 顯示 100% 完成、稍等一下再進閱讀
+  GUI.fillPopupProgress(renderer, popupRect, 100);
+  renderer.displayBuffer();
+  delay(300);
 }

@@ -304,6 +304,8 @@ void RecentBooksActivity::drawBookTile(const int bookIndex, const int gridX, con
     }
   }
 
+  // stage15.11: 3x3 grid 書名改回 UI_10（17pt 太大、grid 每格小擠不下）
+  //             17pt 留給 Flow 中央那本大書封跟 reader 內文用
   const std::string title = renderer.truncatedText(UI_10_FONT_ID, recentBooks[bookIndex].title.c_str(), coverWidth);
   renderer.drawText(UI_10_FONT_ID, coverX, tileY + tileHeight - titleLineHeight - TITLE_BOTTOM_PADDING, title.c_str(), true);
 }

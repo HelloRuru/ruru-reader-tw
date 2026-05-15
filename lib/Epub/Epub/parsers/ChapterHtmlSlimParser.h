@@ -37,6 +37,7 @@ class ChapterHtmlSlimParser {
   std::unique_ptr<ParsedText> currentTextBlock = nullptr;
   std::unique_ptr<Page> currentPage = nullptr;
   int16_t currentPageNextY = 0;
+  int16_t currentPageNextX = 0;  // stage15.14: 直排頁的「當前欄 X 位置」
   int fontId;
   float lineCompression;
   bool extraParagraphSpacing;
@@ -48,6 +49,9 @@ class ChapterHtmlSlimParser {
   uint8_t wordSpacing;
   const CssParser* cssParser;
   bool embeddedStyle;
+  bool verticalLayout;  // stage15.14: 直排切頁開關
+  // stage15.16: 跨段續塞 state、避免段落結束欄沒滿就跳新欄、減少底部空白
+  ParsedText::VerticalColumnState verticalColState;
 
   std::string contentBase;
   std::string imageBasePath;
@@ -70,6 +74,8 @@ class ChapterHtmlSlimParser {
   void startNewTextBlock(const BlockStyle& blockStyle);
   void flushPartWordBuffer();
   void makePages();
+  // stage15.14: 直排切頁
+  void addVerticalColumnToPage(std::shared_ptr<TextBlock> column);
   // XML callbacks
   static void XMLCALL startElement(void* userData, const XML_Char* name, const XML_Char** atts);
   static void XMLCALL characterData(void* userData, const XML_Char* s, int len);
@@ -102,7 +108,8 @@ class ChapterHtmlSlimParser {
                                  const std::function<void(std::unique_ptr<Page>)>& completePageFn,
                                  const bool embeddedStyle, const std::string& contentBase,
                                  const std::string& imageBasePath, const std::function<void()>& popupFn = nullptr,
-                                 const CssParser* cssParser = nullptr)
+                                 const CssParser* cssParser = nullptr,
+                                 const bool verticalLayout = false)
 
       : epub(epub),
         filepath(filepath),
@@ -120,6 +127,7 @@ class ChapterHtmlSlimParser {
         popupFn(popupFn),
         cssParser(cssParser),
         embeddedStyle(embeddedStyle),
+        verticalLayout(verticalLayout),
         contentBase(contentBase),
         imageBasePath(imageBasePath) {}
 

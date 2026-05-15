@@ -40,14 +40,28 @@ class EpubReaderActivity final : public ActivityWithSubactivity {
   bool pendingGoHome = false;           // Defer go home to avoid race condition with display task
   bool skipNextButtonCheck = false;     // Skip button processing for one frame after subactivity exit
   bool pendingMarginRelayout = false;   // Defer heavy section relayout until margin-setting is confirmed
+  // stage15.30 (嚕寶要求: 切換字體後文本要重新讀取 EPDFONT + 重排版):
+  //   每次 render 前比對「當前 fontId/lineCompression/wordSpacing」跟「section 建時用的」
+  //   不一致就 section.reset() 重建 cache、確保字體切換後 layout 重算
+  int lastRenderedFontId = -1;
+  float lastRenderedLineCompression = 0.0f;
+  uint8_t lastRenderedWordSpacing = 255;
   const std::function<void()> onGoBack;
   const std::function<void()> onGoHome;
 
   static void taskTrampoline(void* param);
   [[noreturn]] void displayTaskLoop();
+  // stage15.21 (嚕寶要求全書預讀):
+  //   打開書時、先把所有 spine 的 section cache 都建好、再進閱讀畫面
+  //   有 cache 就跳過、沒 cache 才建、會顯示進度條
+  //   大書（spine > 50）可能要 1-5 分鐘、但之後翻章節即時不卡
+  void preScanAllChapters();
   void renderScreen();
   void renderContents(std::unique_ptr<Page> page, int orientedMarginTop, int orientedMarginRight,
                       int orientedMarginBottom, int orientedMarginLeft);
+  // stage15.14: 撤回 stage15.12-13 補丁、改用 SAM 路徑（ChapterHtmlSlimParser 直接切直排頁）
+  // collectVerticalTextFromPage 仍保留宣告（cpp 內仍有實作、無害）
+  std::string collectVerticalTextFromPage(const class Page* page);
   void renderStatusBar(int orientedMarginRight, int orientedMarginBottom,int orientedMarginTop, int orientedMarginLeft) const;
   void saveProgress(int spineIndex, int currentPage, int pageCount);
   // Jump to a percentage of the book (0-100), mapping it to spine and page.

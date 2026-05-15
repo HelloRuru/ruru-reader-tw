@@ -8,8 +8,10 @@
 #include "components/themes/BaseTheme.h"
 #include "components/themes/lyra/LyraTheme.h"
 #include "components/themes/lyra/LyraFlowTheme.h"
-#include "components/themes/lyra/Lyra3CoversTheme.h"
 // stage5.5/stage12.5: RoundedRaff 圓角 theme 砍掉
+// stage15: Lyra（基本款）和 Lyra3Covers（三封面）砍掉
+// stage15.11: LibraryCardTheme 砍掉、合併進 LyraFlowTheme（Flow + 卡風）
+//             只剩一個 theme = LyraFlow（內含卡號 + 撕邊裝飾）
 
 UITheme UITheme::instance;
 
@@ -23,27 +25,12 @@ void UITheme::reload() {
   setTheme(themeType);
 }
 
-void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
-  switch (type) {
-    // stage10: CLASSIC 砍掉，舊設定值 0 會 fallback 到 default (LYRA_FLOW)
-    case CrossPointSettings::UI_THEME::LYRA:
-      Serial.printf("[%lu] [UI] Using Lyra theme\n", millis());
-      currentTheme = new LyraTheme();
-      currentMetrics = &LyraMetrics::values;
-      break;
-    case CrossPointSettings::UI_THEME::LYRA_3COVERS:
-      Serial.printf("[%lu] [UI] Using Lyra 3Covers theme\n", millis());
-      currentTheme = new Lyra3CoversTheme();
-      currentMetrics = &Lyra3CoversMetrics::values;
-      break;
-    case CrossPointSettings::UI_THEME::LYRA_FLOW:
-    default:
-      Serial.printf("[%lu] [UI] Using Lyra Flow theme (carousel)\n", millis());
-      currentTheme = new LyraFlowTheme();
-      currentMetrics = &LyraFlowMetrics::values;
-      break;
-    // stage5.5/stage12.5: RoundedRaff 圓角 theme 砍掉
-  }
+void UITheme::setTheme(CrossPointSettings::UI_THEME /*type*/) {
+  // stage15.29 (嚕寶要求回復原本 FLOW THEME):
+  //   回到 LyraFlowTheme（FLOW carousel 斜邊 + ICON menu）
+  Serial.printf("[%lu] [UI] Using Lyra Flow theme (FLOW carousel + ICON menu)\n", millis());
+  currentTheme = new LyraFlowTheme();
+  currentMetrics = &LyraFlowMetrics::values;
 }
 
 int UITheme::getNumberOfItemsPerPage(const GfxRenderer& renderer, bool hasHeader, bool hasTabBar, bool hasButtonHints,

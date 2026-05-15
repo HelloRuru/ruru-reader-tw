@@ -676,13 +676,18 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
     }
   }
 
-  // 保留原有长文本拆分逻辑
-  if (self->currentTextBlock->size() > 750) {
-    Serial.printf("[%lu] [EHP] Text block too long, splitting into multiple pages\n", millis());
-    self->currentTextBlock->layoutAndExtractLines(
-        self->renderer, self->fontId, self->viewportWidth,
-        [self](const std::shared_ptr<TextBlock>& textBlock) { self->addLineToPage(textBlock); }, false);
-  }
+  // stage15.34 (嚕寶要求拿掉粗香菜換頁吃字 root cause):
+  //   原本 size() > 750 觸發 layoutAndExtractLines(includeLastLine=false)
+  //   問題：同一段文字會 layout 兩次（觸發切分一次、最後 makePages 又一次）
+  //   兩次 layout 可能算出不同 line break（特別是粗香菜大字級字寬不均時）
+  //   → 邊界字位置不一致 → 看起來「上下頁不連貫」
+  //   修法：拿掉切分、讓 makePages 統一處理長段、ESP32-C3 多吃點記憶體換正確性
+  // if (self->currentTextBlock->size() > 750) {
+  //   Serial.printf("[%lu] [EHP] Text block too long, splitting into multiple pages\n", millis());
+  //   self->currentTextBlock->layoutAndExtractLines(
+  //       self->renderer, self->fontId, self->viewportWidth,
+  //       [self](const std::shared_ptr<TextBlock>& textBlock) { self->addLineToPage(textBlock); }, false);
+  // }
 }
 
 
@@ -838,6 +843,12 @@ bool ChapterHtmlSlimParser::parseAndBuildPages() {
   // Process last page if there is still text
   if (currentTextBlock) {
     makePages();
+    // stage15.16: 直排時、章節結束 flush 殘餘 column state（最後一欄即使沒滿也要 flush）
+    if (verticalLayout) {
+      ParsedText::flushVerticalColumnState(
+          &verticalColState, currentTextBlock ? currentTextBlock->getBlockStyle() : BlockStyle(),
+          [this](const std::shared_ptr<TextBlock>& textBlock) { addVerticalColumnToPage(textBlock); });
+    }
     completePageFn(std::move(currentPage));
     currentPage.reset();
     currentTextBlock.reset();
@@ -861,6 +872,35 @@ void ChapterHtmlSlimParser::addLineToPage(std::shared_ptr<TextBlock> line) {
   currentPageNextY += lineHeight;
 }
 
+// stage15.14 (SAM 移植) + stage15.34 (嚕寶要求修粗香菜直排吃字):
+//   直排欄寬計算
+//   原本用 getTextWidth("我") — 但粗香菜字寬不均、有些字比「我」寬
+//   → 用「我」算的欄寬塞不下實際字 → 切欄錯 → 跨頁不連貫
+//   改用 getLineHeight(fontId)：直排每字格寬 = 字級高度（方塊字假設）
+//   wordSpacing 影響欄內字距；欄寬仍固定用 lineHeight，避免字距設定同時改變欄數。
+static int getVerticalColumnWidth(const GfxRenderer& renderer, const int fontId, const uint8_t wordSpacing) {
+  (void)wordSpacing;  // 直排不用 wordSpacing
+  return renderer.getLineHeight(fontId);
+}
+
+// stage15.14 (SAM 移植): 直排把欄塞進當前 Page
+//   currentPageNextX 從右往左累計、滿一頁就 completePageFn
+//   PageLine xPos = 欄中心 X 座標
+void ChapterHtmlSlimParser::addVerticalColumnToPage(std::shared_ptr<TextBlock> column) {
+  const int columnWidth = getVerticalColumnWidth(renderer, fontId, wordSpacing);
+
+  if (currentPageNextX + columnWidth > viewportWidth) {
+    completePageFn(std::move(currentPage));
+    currentPage.reset(new Page());
+    currentPageNextX = 0;
+  }
+
+  // 直排：欄從右往左排、xOffset = viewportWidth - 累計 - 半欄寬（欄中心）
+  const int xOffset = viewportWidth - currentPageNextX - (columnWidth / 2);
+  currentPage->elements.push_back(std::make_shared<PageLine>(column, xOffset, 0));
+  currentPageNextX += columnWidth;
+}
+
 void ChapterHtmlSlimParser::makePages() {
   if (!currentTextBlock) {
     Serial.printf("[%lu] [EHP] !! No text block to make pages for !!\n", millis());
@@ -870,12 +910,26 @@ void ChapterHtmlSlimParser::makePages() {
   if (!currentPage) {
     currentPage.reset(new Page());
     currentPageNextY = 0;
+    currentPageNextX = 0;
   }
 
   const int lineHeight = renderer.getLineHeight(fontId) * lineCompression;
 
   // Apply top spacing before the paragraph (stored in pixels)
   const BlockStyle& blockStyle = currentTextBlock->getBlockStyle();
+
+  // stage15.14 (SAM 移植) + stage15.16 (滿版):
+  //   傳 verticalColState 進 layout、跨段續塞、段尾不 flush
+  //   章節結束時（parseAndBuildPages 最後）才 flush 殘餘
+  if (verticalLayout) {
+    currentTextBlock->getBlockStyle().verticalLayout = true;
+    currentTextBlock->layoutAndExtractVerticalColumns(
+        renderer, fontId, viewportHeight, lineCompression,
+        [this](const std::shared_ptr<TextBlock>& textBlock) { addVerticalColumnToPage(textBlock); },
+        &verticalColState);
+    return;
+  }
+
   if (blockStyle.marginTop > 0) {
     currentPageNextY += blockStyle.marginTop;
   }

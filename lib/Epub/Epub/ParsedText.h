@@ -54,4 +54,24 @@ class ParsedText {
   void layoutAndExtractLines(const GfxRenderer& renderer, int fontId, uint16_t viewportWidth,
                              const std::function<void(std::shared_ptr<TextBlock>)>& processLine,
                              bool includeLastLine = true);
+  // stage15.14 (SAM 移植): 直排切欄、按 viewportHeight 切、字一個一個塞、滿就換欄
+  // stage15.16: 加 columnState 參數讓 caller 控制跨段續塞、不留段落間空白
+  struct VerticalColumnState {
+    std::list<std::string> columnWords;
+    std::list<uint16_t> columnYpos;
+    std::list<EpdFontFamily::Style> columnStyles;
+    uint16_t nextY = 0;
+    uint16_t lineHeight = 0;
+    uint16_t charAdvance = 0;
+    uint16_t viewportHeight = 0;
+    CssTextAlign alignment = CssTextAlign::Justify;
+    bool firstColumn = true;
+  };
+  void layoutAndExtractVerticalColumns(const GfxRenderer& renderer, int fontId, uint16_t viewportHeight,
+                                       float lineCompression,
+                                       const std::function<void(std::shared_ptr<TextBlock>)>& processColumn,
+                                       VerticalColumnState* state = nullptr);
+  // 把 state 內殘留字 flush 出去（章節結束時呼叫）
+  static void flushVerticalColumnState(VerticalColumnState* state, const BlockStyle& blockStyle,
+                                       const std::function<void(std::shared_ptr<TextBlock>)>& processColumn);
 };

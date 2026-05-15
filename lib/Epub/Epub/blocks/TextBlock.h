@@ -28,6 +28,13 @@ class TextBlock final : public Block {
   void setBlockStyle(const BlockStyle& blockStyle) { this->blockStyle = blockStyle; }
   const BlockStyle& getBlockStyle() const { return blockStyle; }
   bool isEmpty() override { return words.empty(); }
+  // stage15.5: 直排支援 — 給上層拿到整行文字內容（不洩漏橫排座標）
+  std::string concatText() const {
+    std::string result;
+    for (const auto& w : words) result += w;
+    return result;
+  }
+  bool getHorizontalPixelBoundsY(const GfxRenderer& renderer, int fontId, int y, int* top, int* bottom) const;
   //void layout(GfxRenderer& renderer) override {};
   // given a renderer works out where to break the words into lines
   void render(const GfxRenderer& renderer, int fontId, int x, int y) const;
